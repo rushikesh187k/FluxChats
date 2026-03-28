@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flux Chat - Secure Server</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #0a0a0c; color: #fff; height: 100vh; overflow: hidden; user-select: none; }
+
+        /* --- LOGIN --- */
+        #loginScreen { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; position: absolute; z-index: 100; transition: 0.5s; }
+        .login-container { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(15px); padding: 40px; border-radius: 20px; width: 320px; text-align: center; }
+        .login-btn { width: 100%; padding: 15px; background: linear-gradient(45deg, #00ffcc, #0088ff); border: none; border-radius: 10px; font-weight: 800; cursor: pointer; margin-top: 20px; }
+        input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; border-radius: 8px; margin-top: 10px; outline: none; }
+
+        /* --- CHAT AREA --- */
+        #chatScreen { display: none; height: 100vh; width: 100vw; opacity: 0; transition: 0.5s; }
+        .sidebar { width: 250px; background: #111116; border-right: 1px solid #222; display: flex; flex-direction: column; }
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; background: #16161b; }
+        .messages-container { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+
+        /* --- ANNOUNCEMENT STYLE --- */
+        .announcement {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #ffd700;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            color: #ffd700;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+            animation: pulse 2s infinite;
+            margin: 10px 0;
+        }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+
+        /* --- BADGES --- */
+        .badge { font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: 900; margin-right: 5px; }
+        .badge-admin { color: #00ffcc; border: 1px solid #00ffcc; }
+        .badge-elite { color: #b828ff; border: 1px solid #b828ff; }
+        .badge-pro { color: #0088ff; border: 1px solid #0088ff; }
+
+        .message { display: flex; flex-direction: column; margin-bottom: 5px; }
+        .sender { font-weight: 700; color: #00ffcc; font-size: 14px; }
+        .text { color: #ccc; font-size: 15px; margin-top: 2px; }
+
+        .input-zone { padding: 20px; background: #16161b; }
+        .input-box { display: flex; background: #2b2d31; border-radius: 10px; padding: 10px; }
+        .input-box input { border: none; background: transparent; margin: 0; }
+        
+        .watermark-overlay { position: fixed; top: 0; opacity: 0.02; pointer-events: none; z-index: 9999; font-weight: 900; transform: rotate(-30deg) scale(2); width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen">
+        <div class="login-container">
+            <h2 style="color:#00ffcc">FLUX SERVER</h2>
+            <input type="text" id="displayName" placeholder="Username">
+            <input type="password" id="roomCode" placeholder="Code">
+            <button class="login-btn" id="loginBtn">JOIN SQUAD</button>
+        </div>
+    </div>
+
+    <div id="chatScreen">
+        <div class="watermark-overlay" id="watermark"></div>
+        <div class="sidebar">
+            <div style="padding:20px; color:#00ffcc; font-weight:800; border-bottom:1px solid #222">FLUX SIDEBAR</div>
+            <div id="activeMembers" style="padding:15px; font-size:13px; color:#888"></div>
+        </div>
+        <div class="chat-area">
+            <div style="padding:15px; border-bottom:1px solid #222; font-weight:600"># vip-lounge</div>
+            <div class="messages-container" id="chatFeed"></div>
+            <div class="input-zone">
+                <div class="input-box">
+                    <input type="text" id="messageInput" placeholder="Message squad..." autocomplete="off">
+                    <button id="sendBtn" style="background:none; border:none; color:#00ffcc; cursor:pointer">▶</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPnStupHytou8te3O-Xxb6TvEK8VnLzg8",
+            authDomain: "fluxchat-9b101.firebaseapp.com",
+            projectId: "fluxchat-9b101",
+            storageBucket: "fluxchat-9b101.firebasestorage.app",
+            messagingSenderId: "1009980465023",
+            appId: "1:1009980465023:web:bbdfa372d709c9c2ccc44a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const name = document.getElementById('displayName').value.trim();
+            const code = document.getElementById('roomCode').value.trim();
+            if(name !== '' && code.toUpperCase() === 'FLUX2026') {
+                sessionStorage.setItem('username', name);
+                document.getElementById('watermark').innerText = (name + " ").repeat(300);
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('chatScreen').style.display = 'flex';
+                setTimeout(() => document.getElementById('chatScreen').style.opacity = '1', 50);
+            }
+        });
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (text === '') return;
+            const username = sessionStorage.getItem('username');
+            
+            // ANNOUNCEMENT CHECK (Only Rushikesh can do this)
+            let isAnnounce = false;
+            let cleanText = text;
+            if (text.startsWith('ANNOUNCE:') && username.toLowerCase() === 'rushikesh') {
+                isAnnounce = true;
+                cleanText = text.replace('ANNOUNCE:', '').trim();
+            }
+
+            input.value = ''; 
+            await addDoc(collection(db, "messages"), { 
+                text: cleanText, 
+                sender: username, 
+                announce: isAnnounce,
+                timestamp: serverTimestamp() 
+            });
+        }
+
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        document.getElementById('messageInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+
+        onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), (snapshot) => {
+            const feed = document.getElementById('chatFeed');
+            feed.innerHTML = '';
+            let userCounts = {};
+
+            snapshot.forEach(d => {
+                const data = d.data();
+                userCounts[data.sender] = (userCounts[data.sender] || 0) + 1;
+                
+                if (data.announce === true) {
+                    feed.innerHTML += `<div class="announcement">📢 SYSTEM ANNOUNCEMENT: ${data.text}</div>`;
+                } else {
+                    let badge = 'badge-newbie', bText = 'SQUAD';
+                    if(data.sender.toLowerCase() === 'rushikesh') { badge = 'badge-admin'; bText = '👑 ADMIN'; }
+                    else if(userCounts[data.sender] >= 50) { badge = 'badge-elite'; bText = '⭐ ELITE'; }
+                    
+                    feed.innerHTML += `
+                        <div class="message">
+                            <div class="sender"><span class="badge ${badge}">${bText}</span>${data.sender}</div>
+                            <div class="text">${data.text}</div>
+                        </div>`;
+                }
+            });
+            feed.scrollTop = feed.scrollHeight;
+            document.getElementById('activeMembers').innerHTML = "Online Squad: " + Object.keys(userCounts).length;
+        });
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        window.addEventListener('blur', () => document.body.style.filter = 'blur(15px)');
+        window.addEventListener('focus', () => document.body.style.filter = 'none');
+    </script>
+</body>
+</html>
