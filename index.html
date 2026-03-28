@@ -9,46 +9,48 @@
         body { font-family: 'Segoe UI', sans-serif; background-color: #0a0a0c; color: #fff; height: 100vh; overflow: hidden; user-select: none; }
 
         /* --- LOGIN --- */
-        #loginScreen { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; position: absolute; z-index: 100; transition: 0.5s; }
+        #loginScreen { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; position: absolute; z-index: 100; transition: 0.5s; background: #0a0a0c; }
         .login-container { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(15px); padding: 40px; border-radius: 20px; width: 320px; text-align: center; }
         .login-btn { width: 100%; padding: 15px; background: linear-gradient(45deg, #00ffcc, #0088ff); border: none; border-radius: 10px; font-weight: 800; cursor: pointer; margin-top: 20px; }
-        input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; border-radius: 8px; margin-top: 10px; outline: none; }
+        
+        input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; border-radius: 8px; margin-top: 10px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #00ffcc; }
+        
+        /* The locked state for the username */
+        input:disabled { background: #0a0a0c; border: 1px dashed #555; color: #00ffcc; font-weight: bold; cursor: not-allowed; opacity: 0.7; }
 
-        /* --- CHAT AREA --- */
+        /* --- LAYOUT --- */
         #chatScreen { display: none; height: 100vh; width: 100vw; opacity: 0; transition: 0.5s; }
-        .sidebar { width: 250px; background: #111116; border-right: 1px solid #222; display: flex; flex-direction: column; }
+        .sidebar { width: 260px; background: #111116; border-right: 1px solid #222; display: flex; flex-direction: column; }
         .chat-area { flex-grow: 1; display: flex; flex-direction: column; background: #16161b; }
         .messages-container { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
 
-        /* --- ANNOUNCEMENT STYLE --- */
-        .announcement {
-            background: rgba(255, 215, 0, 0.1);
-            border: 1px solid #ffd700;
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-            color: #ffd700;
-            font-weight: 700;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
-            animation: pulse 2s infinite;
-            margin: 10px 0;
-        }
-        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+        /* --- SIDEBAR DMs --- */
+        .global-btn { background: rgba(0, 255, 204, 0.1); border: 1px solid #00ffcc; color: #00ffcc; padding: 12px; border-radius: 8px; font-weight: 800; text-align: center; cursor: pointer; margin-bottom: 15px; transition: 0.2s; }
+        .global-btn:hover { background: rgba(0, 255, 204, 0.2); }
+        .member { display: flex; align-items: center; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #ccc; transition: 0.2s; }
+        .member:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #43b581; margin-right: 12px; box-shadow: 0 0 10px rgba(67,181,129,0.5); }
 
-        /* --- BADGES --- */
-        .badge { font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: 900; margin-right: 5px; }
-        .badge-admin { color: #00ffcc; border: 1px solid #00ffcc; }
-        .badge-elite { color: #b828ff; border: 1px solid #b828ff; }
-        .badge-pro { color: #0088ff; border: 1px solid #0088ff; }
+        /* --- BADGES & ROLES --- */
+        .badge { font-size: 9px; padding: 3px 6px; border-radius: 4px; font-weight: 900; margin-right: 5px; text-transform: uppercase; }
+        .badge-admin { color: #00ffcc; border: 1px solid #00ffcc; background: rgba(0,255,204,0.1); }
+        .badge-dev { color: #0088ff; border: 1px solid #0088ff; background: rgba(0,136,255,0.1); }
+        .badge-emp { color: #ff0044; border: 1px solid #ff0044; background: rgba(255,0,68,0.1); }
+        .badge-elite { color: #b828ff; border: 1px solid #b828ff; background: rgba(184,40,255,0.1); }
+        .badge-pro { color: #ffb700; border: 1px solid #ffb700; background: rgba(255,183,0,0.1); }
+        .badge-newbie { color: #888; border: 1px solid #555; background: rgba(136,136,136,0.1); }
+
+        .announcement { background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; padding: 15px; border-radius: 12px; text-align: center; color: #ffd700; font-weight: 700; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
 
         .message { display: flex; flex-direction: column; margin-bottom: 5px; }
-        .sender { font-weight: 700; color: #00ffcc; font-size: 14px; }
-        .text { color: #ccc; font-size: 15px; margin-top: 2px; }
+        .sender { font-weight: 700; font-size: 14px; }
+        .text { color: #dcddde; font-size: 15px; margin-top: 4px; line-height: 1.4; word-wrap: break-word; }
 
         .input-zone { padding: 20px; background: #16161b; }
         .input-box { display: flex; background: #2b2d31; border-radius: 10px; padding: 10px; }
-        .input-box input { border: none; background: transparent; margin: 0; }
-        
+        .input-box input { border: none; background: transparent; margin: 0; color: #fff; width: 100%; outline: none; }
         .watermark-overlay { position: fixed; top: 0; opacity: 0.02; pointer-events: none; z-index: 9999; font-weight: 900; transform: rotate(-30deg) scale(2); width: 100%; height: 100%; }
     </style>
 </head>
@@ -56,26 +58,39 @@
 
     <div id="loginScreen">
         <div class="login-container">
-            <h2 style="color:#00ffcc">FLUX SERVER</h2>
-            <input type="text" id="displayName" placeholder="Username">
-            <input type="password" id="roomCode" placeholder="Code">
-            <button class="login-btn" id="loginBtn">JOIN SQUAD</button>
+            <h2 style="color:#00ffcc; margin-top:0;">FLUX SQUAD</h2>
+            
+            <label id="lockWarning" style="font-size: 10px; color: #ff0044; font-weight: bold; text-transform: uppercase;">Device Lock Active</label>
+            <input type="text" id="displayName" placeholder="Choose wisely. It's permanent." autocomplete="off">
+            
+            <input type="password" id="roomCode" placeholder="Secret Code">
+            <button class="login-btn" id="loginBtn">ENTER SERVER</button>
         </div>
     </div>
 
     <div id="chatScreen">
         <div class="watermark-overlay" id="watermark"></div>
+        
         <div class="sidebar">
-            <div style="padding:20px; color:#00ffcc; font-weight:800; border-bottom:1px solid #222">FLUX SIDEBAR</div>
-            <div id="activeMembers" style="padding:15px; font-size:13px; color:#888"></div>
+            <div style="padding:20px; font-weight:800; border-bottom:1px solid #222; color:#fff;">
+                <span style="color:#00ffcc">FLUX</span> NETWORK
+            </div>
+            <div style="padding:15px; flex-grow:1; overflow-y:auto;">
+                <div class="global-btn" onclick="switchRoom('global')">🌍 GLOBAL CHAT</div>
+                <div style="font-size:11px; color:#666; font-weight:700; margin-bottom:10px; text-transform:uppercase;">Direct Messages</div>
+                <div id="activeMembers"></div>
+            </div>
         </div>
+
         <div class="chat-area">
-            <div style="padding:15px; border-bottom:1px solid #222; font-weight:600"># vip-lounge</div>
+            <div id="roomHeader" style="padding:20px; border-bottom:1px solid #222; font-weight:600; font-size:18px;">
+                <span style="color:#888; margin-right:5px;">#</span> vip-lounge
+            </div>
             <div class="messages-container" id="chatFeed"></div>
             <div class="input-zone">
                 <div class="input-box">
-                    <input type="text" id="messageInput" placeholder="Message squad..." autocomplete="off">
-                    <button id="sendBtn" style="background:none; border:none; color:#00ffcc; cursor:pointer">▶</button>
+                    <input type="text" id="messageInput" placeholder="Message global..." autocomplete="off">
+                    <button id="sendBtn" style="background:none; border:none; color:#00ffcc; cursor:pointer; font-size:18px;">▶</button>
                 </div>
             </div>
         </div>
@@ -97,28 +112,74 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        let currentRoom = 'global';
+        let allMessagesData = [];
+        let userCounts = {};
+
+        // --- HARDWARE LOCK LOGIC ---
+        const nameInput = document.getElementById('displayName');
+        const lockWarning = document.getElementById('lockWarning');
+        const lockedName = localStorage.getItem('flux_permanent_name'); // Looks for the tattoo
+
+        // If the browser remembers them, lock the box down
+        if (lockedName) {
+            nameInput.value = lockedName;
+            nameInput.disabled = true;
+            lockWarning.innerText = "🔒 DEVICE LOCKED TO: " + lockedName;
+            lockWarning.style.color = "#00ffcc";
+        } else {
+            lockWarning.innerText = "⚠️ CHOOSE CAREFULLY. NAME IS PERMANENT.";
+        }
+
         document.getElementById('loginBtn').addEventListener('click', () => {
-            const name = document.getElementById('displayName').value.trim();
+            const name = nameInput.value.trim();
             const code = document.getElementById('roomCode').value.trim();
+            
             if(name !== '' && code.toUpperCase() === 'FLUX2026') {
+                
+                // If they don't have a tattoo yet, give them one
+                if (!lockedName) {
+                    localStorage.setItem('flux_permanent_name', name);
+                }
+
                 sessionStorage.setItem('username', name);
-                document.getElementById('watermark').innerText = (name + " ").repeat(300);
+                document.getElementById('watermark').innerText = (name + " ").repeat(200);
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('chatScreen').style.display = 'flex';
                 setTimeout(() => document.getElementById('chatScreen').style.opacity = '1', 50);
             }
         });
 
+        // --- ROOM SWITCHING ---
+        window.switchRoom = function(targetUser) {
+            const me = sessionStorage.getItem('username');
+            const input = document.getElementById('messageInput');
+            if (targetUser === me) return; 
+
+            if (targetUser === 'global') {
+                currentRoom = 'global';
+                document.getElementById('roomHeader').innerHTML = '<span style="color:#888; margin-right:5px;">#</span> vip-lounge';
+                input.placeholder = "Message global...";
+            } else {
+                const users = [me, targetUser].sort();
+                currentRoom = `private_${users[0]}_${users[1]}`;
+                document.getElementById('roomHeader').innerHTML = `🔒 Private Chat with <span style="color:#fff">${targetUser}</span>`;
+                input.placeholder = `Message ${targetUser}...`;
+            }
+            renderChat();
+        };
+
+        // --- SENDING MESSAGES ---
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             if (text === '') return;
             const username = sessionStorage.getItem('username');
             
-            // ANNOUNCEMENT CHECK (Only Rushikesh can do this)
             let isAnnounce = false;
             let cleanText = text;
-            if (text.startsWith('ANNOUNCE:') && username.toLowerCase() === 'rushikesh') {
+            
+            if (text.startsWith('ANNOUNCE:') && username.toLowerCase() === 'rushikesh' && currentRoom === 'global') {
                 isAnnounce = true;
                 cleanText = text.replace('ANNOUNCE:', '').trim();
             }
@@ -128,6 +189,7 @@
                 text: cleanText, 
                 sender: username, 
                 announce: isAnnounce,
+                room: currentRoom, 
                 timestamp: serverTimestamp() 
             });
         }
@@ -135,35 +197,71 @@
         document.getElementById('sendBtn').addEventListener('click', sendMessage);
         document.getElementById('messageInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
 
+        // --- LIVE DATABASE ---
         onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), (snapshot) => {
-            const feed = document.getElementById('chatFeed');
-            feed.innerHTML = '';
-            let userCounts = {};
+            allMessagesData = [];
+            userCounts = {};
 
-            snapshot.forEach(d => {
-                const data = d.data();
-                userCounts[data.sender] = (userCounts[data.sender] || 0) + 1;
-                
-                if (data.announce === true) {
-                    feed.innerHTML += `<div class="announcement">📢 SYSTEM ANNOUNCEMENT: ${data.text}</div>`;
-                } else {
-                    let badge = 'badge-newbie', bText = 'SQUAD';
-                    if(data.sender.toLowerCase() === 'rushikesh') { badge = 'badge-admin'; bText = '👑 ADMIN'; }
-                    else if(userCounts[data.sender] >= 50) { badge = 'badge-elite'; bText = '⭐ ELITE'; }
-                    
-                    feed.innerHTML += `
-                        <div class="message">
-                            <div class="sender"><span class="badge ${badge}">${bText}</span>${data.sender}</div>
-                            <div class="text">${data.text}</div>
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                allMessagesData.push(data);
+                if (!data.room || data.room === 'global') {
+                    userCounts[data.sender] = (userCounts[data.sender] || 0) + 1;
+                }
+            });
+            updateSidebar();
+            renderChat();
+        });
+
+        function updateSidebar() {
+            const membersDiv = document.getElementById('activeMembers');
+            membersDiv.innerHTML = '';
+            const me = sessionStorage.getItem('username');
+
+            Object.keys(userCounts).forEach(user => {
+                if (user !== me) {
+                    membersDiv.innerHTML += `
+                        <div class="member" onclick="switchRoom('${user}')" title="Click to Private Message">
+                            <div class="status-dot"></div>${user}
                         </div>`;
                 }
             });
+        }
+
+        function renderChat() {
+            const feed = document.getElementById('chatFeed');
+            feed.innerHTML = '';
+
+            allMessagesData.forEach(data => {
+                const msgRoom = data.room || 'global';
+                if (msgRoom === currentRoom) {
+                    if (data.announce === true) {
+                        feed.innerHTML += `<div class="announcement">📢 SYSTEM ANNOUNCEMENT: ${data.text}</div>`;
+                    } else {
+                        let badge = 'badge-newbie', bText = 'SQUAD', nameColor = '#fff';
+                        const lowerName = data.sender.toLowerCase();
+
+                        if (lowerName === 'rushikesh') { badge = 'badge-admin'; bText = '👑 ADMIN'; nameColor = '#00ffcc'; }
+                        else if (lowerName === 'shreyash') { badge = 'badge-dev'; bText = '💻 DEVELOPER'; nameColor = '#0088ff'; }
+                        else if (lowerName === 'roshan') { badge = 'badge-emp'; bText = '🌋 EMPEROR'; nameColor = '#ff0044'; }
+                        else if (userCounts[data.sender] >= 50) { badge = 'badge-elite'; bText = '⭐ ELITE'; }
+                        else if (userCounts[data.sender] >= 10) { badge = 'badge-pro'; bText = '🚀 PRO'; }
+                        
+                        feed.innerHTML += `
+                            <div class="message">
+                                <div class="sender" style="color:${nameColor}">
+                                    <span class="badge ${badge}">${bText}</span>${data.sender}
+                                </div>
+                                <div class="text">${data.text}</div>
+                            </div>`;
+                    }
+                }
+            });
             feed.scrollTop = feed.scrollHeight;
-            document.getElementById('activeMembers').innerHTML = "Online Squad: " + Object.keys(userCounts).length;
-        });
+        }
 
         document.addEventListener('contextmenu', e => e.preventDefault());
-        window.addEventListener('blur', () => document.body.style.filter = 'blur(15px)');
+        window.addEventListener('blur', () => { if(document.getElementById('chatScreen').style.display === 'flex') document.body.style.filter = 'blur(15px)'; });
         window.addEventListener('focus', () => document.body.style.filter = 'none');
     </script>
 </body>
