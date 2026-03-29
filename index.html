@@ -175,7 +175,7 @@
         <button class="btn-main" onclick="requestNameChange()" style="margin-top:10px;">SAVE PROFILE</button>
         
         <div style="margin-top:auto; padding-top:40px; text-align:center; color:#444; font-size:12px;">
-            FLUX OS v10.0 • Notification Edition
+            FLUX OS v9.0 • Stable Edition
         </div>
     </div>
 
@@ -201,34 +201,13 @@
         let roomReadReceipts = {}; 
         let myName = localStorage.getItem('flux_name') || '';
         let replyingToData = null; 
-        
-        // NEW: NOTIFICATION ENGINE VARIABLES
-        let isInitialLoad = true; 
-        const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-        // --- NEW: NOTIFICATION TRIGGER ---
-        function triggerNotification(msgData) {
-            // Play Sound
-            alertSound.play().catch(e => console.log("Sound autoplay blocked by browser"));
-            
-            // Push Notification Banner (Only if they aren't looking at the screen)
-            if ("Notification" in window && Notification.permission === "granted" && document.visibilityState !== "visible") {
-                let msgBody = msgData.text ? msgData.text : "📷 Sent a photo";
-                new Notification(`Flux: ${msgData.sender}`, {
-                    body: msgBody,
-                    icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Berserk_brand_of_sacrifice.svg/512px-Berserk_brand_of_sacrifice.svg.png"
-                });
-            }
-        }
-
-        // --- ADMIN DELETE ---
         window.deleteMessage = async (id) => {
             if (myName.toLowerCase() === 'rushikesh') {
                 if (confirm("Delete this message forever?")) await deleteDoc(doc(db, "messages", id));
             }
         };
 
-        // --- REPLY LOGIC ---
         window.setReply = (sender, text) => {
             replyingToData = { sender: sender, text: text };
             document.getElementById('replyBannerText').innerHTML = `<b>Replying to ${sender}:</b> ${text.substring(0, 40)}...`;
@@ -302,12 +281,6 @@
                 if (code.toUpperCase() !== 'FLUX2026') return alert("⛔ Wrong Secret Code!");
 
                 document.getElementById('loginBtn').innerText = "CONNECTING...";
-                
-                // NEW: ASK FOR NOTIFICATION PERMISSION
-                if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-                    Notification.requestPermission();
-                }
-
                 if(!localStorage.getItem('flux_name')) localStorage.setItem('flux_name', name);
                 myName = name;
                 setOnlineStatus(true); 
@@ -332,4 +305,37 @@
 
         let activeGroups = [];
         onSnapshot(collection(db, "groups"), snapshot => {
-            activeGroups = []
+            activeGroups = [];
+            snapshot.forEach(doc => { activeGroups.push({ id: doc.id, name: doc.data().name }); });
+            updateListUI();
+        });
+
+        onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), snapshot => {
+            allMessagesData = [];
+            snapshot.forEach(d => { 
+                let data = d.data();
+                data.id = d.id; 
+                allMessagesData.push(data); 
+            });
+            renderChat();
+            markRoomAsRead(); 
+        });
+
+        onSnapshot(collection(db, "typing"), snapshot => {
+            const typingBox = document.getElementById('typingBox');
+            let isSomeoneTyping = false;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if(doc.id === currentRoom && data.isTyping && data.user !== myName) {
+                    document.getElementById('typingName').innerText = data.user;
+                    isSomeoneTyping = true;
+                }
+            });
+            typingBox.style.display = isSomeoneTyping ? 'flex' : 'none';
+            if(isSomeoneTyping) document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+        });
+
+        function updateListUI() {
+            const listDiv = document.getElementById('dynamicList');
+            let newHTML = '';
+    
