@@ -2,107 +2,162 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flux Chat - Premium Server</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Flux - Berserk Edition</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: #0a0a0c; color: #fff; height: 100vh; overflow: hidden; user-select: none; }
-
-        /* --- LOGIN --- */
-        #loginScreen { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; position: absolute; z-index: 100; background: #0a0a0c; transition: 0.5s; }
-        .login-container { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(15px); padding: 40px; border-radius: 20px; width: 320px; text-align: center; }
-        .login-btn { width: 100%; padding: 15px; background: linear-gradient(45deg, #00ffcc, #0088ff); border: none; border-radius: 10px; font-weight: 800; cursor: pointer; margin-top: 20px; }
-        input, select { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; border-radius: 8px; margin-top: 10px; outline: none; }
-
-        /* --- SETTINGS SIDEBAR --- */
-        #settingsPanel { position: fixed; right: -300px; top: 0; width: 300px; height: 100%; background: #111116; border-left: 1px solid #222; z-index: 200; transition: 0.3s; padding: 30px; }
-        .settings-open { right: 0 !important; }
-
-        /* --- LAYOUT --- */
-        #chatScreen { display: none; height: 100vh; width: 100vw; opacity: 0; transition: 0.5s; }
-        .sidebar { width: 260px; background: #111116; border-right: 1px solid #222; display: flex; flex-direction: column; }
-        .chat-area { flex-grow: 1; display: flex; flex-direction: column; background: #16161b; }
-        .messages-container { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-
-        /* --- BADGES --- */
-        .badge { font-size: 9px; padding: 3px 6px; border-radius: 4px; font-weight: 900; margin-right: 5px; text-transform: uppercase; }
-        .badge-admin { color: #00ffcc; border: 1px solid #00ffcc; background: rgba(0,255,204,0.1); }
-        .badge-dev { color: #0088ff; border: 1px solid #0088ff; background: rgba(0,136,255,0.1); }
-        .badge-emp { color: #ff0044; border: 1px solid #ff0044; background: rgba(255,0,68,0.1); }
-
-        .message { display: flex; flex-direction: column; margin-bottom: 5px; transition: 0.2s; }
-        .admin-mode .message:hover { background: rgba(255, 255, 255, 0.03); cursor: pointer; border-radius: 5px; }
-
-        .sender { font-weight: 700; font-size: 14px; display: flex; align-items: center; }
-        .text { color: #dcddde; font-size: 15px; margin-top: 4px; word-wrap: break-word; }
-
-        .input-zone { padding: 20px; background: #16161b; }
-        .input-box { display: flex; background: #2b2d31; border-radius: 10px; padding: 10px; align-items: center; }
-        .input-box input { border: none; background: transparent; color: #fff; width: 100%; outline: none; margin: 0; }
+        /* PURE BLACK SNAPCHAT STYLE THEME */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        .global-btn { background: rgba(0, 255, 204, 0.1); border: 1px solid #00ffcc; color: #00ffcc; padding: 12px; border-radius: 8px; font-weight: 800; text-align: center; cursor: pointer; margin-bottom: 15px; }
-        .member { display: flex; align-items: center; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #ccc; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #43b581; margin-right: 12px; }
-        .watermark-overlay { position: fixed; top: 0; opacity: 0.02; pointer-events: none; z-index: 9999; transform: rotate(-30deg) scale(2); width: 100%; height: 100%; font-weight: 900; }
+        html, body { height: 100%; height: -webkit-fill-available; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #000000; color: #ffffff; height: 100dvh; overflow: hidden; user-select: none; }
+
+        /* --- SCREEN TRANSITIONS & BUG FIXES --- */
+        .screen { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; background: #000; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease; display: flex; flex-direction: column; }
         
-        .icon-btn { cursor: pointer; font-size: 20px; margin-left: 15px; color: #888; transition: 0.2s; }
-        .icon-btn:hover { color: #00ffcc; }
+        /* FIX: pointer-events: none completely stops invisible screens from freezing your taps */
+        .hidden-right { transform: translateX(100%); pointer-events: none; opacity: 0; }
+        .hidden-down { transform: translateY(150vh); pointer-events: none; opacity: 0; } 
+        .hidden-fade { opacity: 0; pointer-events: none; transform: scale(0.95); }
+
+        /* Z-INDEX LAYERING */
+        #mainScreen { z-index: 10; }
+        #activeChatScreen { z-index: 20; }
+        #settingsScreen { z-index: 30; }
+        #loginScreen { z-index: 40; justify-content: center; align-items: center; }
+
+        /* --- LOGIN SCREEN --- */
+        .login-box { width: 85%; max-width: 350px; text-align: center; }
+        .brand-logo svg { width: 60px; fill: #ff003c; margin-bottom: 20px; filter: drop-shadow(0 0 10px rgba(255,0,60,0.5)); }
+        .input-dark { width: 100%; padding: 16px; background: #111; border: 1px solid #222; color: #fff; border-radius: 12px; margin-bottom: 15px; font-size: 16px; outline: none; transition: 0.3s; }
+        .input-dark:focus { border-color: #ff003c; }
+        .btn-main { width: 100%; padding: 16px; background: #fff; color: #000; border: none; border-radius: 12px; font-weight: 800; font-size: 16px; cursor: pointer; text-transform: uppercase; }
+
+        /* --- MAIN CHAT LIST SCREEN --- */
+        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: env(safe-area-inset-top, 20px) 20px 10px 20px; border-bottom: 1px solid #111; }
+        .nav-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
+        .action-btns { display: flex; gap: 15px; }
+        .icon-btn { background: #111; border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        
+        .list-container { flex-grow: 1; overflow-y: auto; padding: 10px 20px; }
+        .list-item { display: flex; align-items: center; padding: 15px 0; border-bottom: 1px solid #111; cursor: pointer; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; background: #222; display: flex; justify-content: center; align-items: center; font-size: 20px; margin-right: 15px; position: relative; }
+        .online-dot { position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; background: #00ffcc; border-radius: 50%; border: 2px solid #000; }
+        .item-info { flex-grow: 1; }
+        .item-name { font-size: 17px; font-weight: 600; }
+        .item-sub { font-size: 13px; color: #666; margin-top: 4px; }
+
+        /* --- ACTIVE CHAT SCREEN --- */
+        .chat-header { display: flex; align-items: center; padding: env(safe-area-inset-top, 20px) 20px 20px 20px; border-bottom: 1px solid #111; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); }
+        .back-btn { font-size: 24px; margin-right: 15px; cursor: pointer; color: #fff; }
+        .chat-title-info { display: flex; flex-direction: column; }
+        .chat-room-name { font-size: 18px; font-weight: 700; }
+        
+        .messages-feed { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .message-wrapper { display: flex; flex-direction: column; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { 0% { opacity: 0; transform: translateY(10px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        
+        .msg-sender { font-size: 12px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .badge { padding: 2px 5px; border-radius: 4px; font-size: 9px; text-transform: uppercase; }
+        .msg-bubble { background: #1a1a1a; padding: 12px 16px; border-radius: 4px 18px 18px 18px; font-size: 16px; line-height: 1.4; max-width: 85%; word-wrap: break-word; }
+        .msg-self .msg-bubble { background: #fff; color: #000; border-radius: 18px 4px 18px 18px; align-self: flex-end; }
+        .msg-self .msg-sender { justify-content: flex-end; }
+
+        .typing-indicator { display: none; padding: 10px 20px; align-items: center; gap: 4px; color: #666; font-size: 13px; font-weight: 600; }
+        .dot { width: 6px; height: 6px; background: #666; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        .chat-input-zone { padding: 10px 20px calc(20px + env(safe-area-inset-bottom)) 20px; background: #000; border-top: 1px solid #111; }
+        .chat-input-box { display: flex; background: #1a1a1a; border-radius: 24px; padding: 5px 5px 5px 20px; align-items: center; }
+        .chat-input-box input { flex-grow: 1; background: transparent; border: none; color: #fff; font-size: 16px; outline: none; }
+        .send-btn { background: #fff; color: #000; border: none; border-radius: 50%; min-width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; font-size: 16px; cursor: pointer; }
+
+        /* --- SETTINGS SCREEN --- */
+        #settingsScreen { background: #0a0a0c; padding: env(safe-area-inset-top, 30px) 30px 30px 30px; }
+        .settings-close { text-align: right; font-size: 40px; cursor: pointer; color: #666; margin-bottom: 20px; line-height: 1; }
     </style>
 </head>
-<body id="mainBody">
+<body>
 
-    <div id="settingsPanel">
-        <h3 style="color:#00ffcc; margin-bottom:20px;">USER SETTINGS</h3>
-        
-        <label style="font-size:12px; color:#888;">NAME COLOR</label>
-        <input type="color" id="userColorPicker" value="#ffffff" style="height:50px; cursor:pointer;">
-
-        <div style="margin-top:30px;">
-            <label style="font-size:12px; color:#888;">CHANGE USERNAME</label>
-            <input type="text" id="newNameInput" placeholder="New Name...">
-            <p id="timerLabel" style="font-size:10px; color:#ff0044; margin-top:5px;"></p>
-            <button class="login-btn" onclick="requestNameChange()" style="font-size:12px; padding:10px;">UPDATE NAME</button>
-        </div>
-
-        <button onclick="toggleSettings()" style="margin-top:50px; background:transparent; border:1px solid #444; color:#888; width:100%; padding:10px; border-radius:8px; cursor:pointer;">CLOSE</button>
-    </div>
-
-    <div id="loginScreen">
-        <div class="login-container">
-            <h2 style="color:#00ffcc">FLUX SQUAD</h2>
-            <input type="text" id="displayName" placeholder="Username" autocomplete="off">
-            <input type="password" id="roomCode" placeholder="Secret Code">
-            <button class="login-btn" id="loginBtn">ACCESS SERVER</button>
+    <div id="loginScreen" class="screen">
+        <div class="login-box">
+            <div class="brand-logo">
+                <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 0 L45 20 L35 15 L45 35 L30 30 L45 50 L20 40 L40 65 L10 60 L45 80 L35 110 L50 90 L65 110 L55 80 L90 60 L60 65 L80 40 L55 50 L70 30 L55 35 L65 15 L55 20 Z" />
+                    <line x1="50" y1="0" x2="50" y2="120" stroke="#ff003c" stroke-width="4"/>
+                </svg>
+            </div>
+            <input type="text" id="displayName" class="input-dark" placeholder="Username" autocomplete="off">
+            <input type="password" id="roomCode" class="input-dark" placeholder="Secret Code">
+            <button class="btn-main" id="loginBtn">ENTER</button>
         </div>
     </div>
 
-    <div id="chatScreen">
-        <div class="watermark-overlay" id="watermark"></div>
-        <div class="sidebar">
-            <div style="padding:20px; font-weight:800; border-bottom:1px solid #222; display:flex; justify-content:space-between;">
-                FLUX NETWORK
-                <span class="icon-btn" onclick="toggleSettings()">⚙️</span>
+    <div id="mainScreen" class="screen hidden-fade">
+        <div class="top-nav">
+            <div class="nav-title">
+                Chats
+                <svg width="24" height="24" viewBox="0 0 100 120" style="fill:#ff003c;"><path d="M50 0 L45 20 L35 15 L45 35 L30 30 L45 50 L20 40 L40 65 L10 60 L45 80 L35 110 L50 90 L65 110 L55 80 L90 60 L60 65 L80 40 L55 50 L70 30 L55 35 L65 15 L55 20 Z"/><line x1="50" y1="0" x2="50" y2="120" stroke="#ff003c" stroke-width="4"/></svg>
             </div>
-            <div style="padding:15px; flex-grow:1;">
-                <div class="global-btn" onclick="switchRoom('global')">🌍 GLOBAL CHAT</div>
-                <div id="activeMembers"></div>
+            <div class="action-btns">
+                <button class="icon-btn" onclick="createNewGroup()">➕</button>
+                <button class="icon-btn" onclick="toggleScreen('settingsScreen', true)">⚙️</button>
             </div>
         </div>
-        <div class="chat-area">
-            <div id="roomHeader" style="padding:20px; border-bottom:1px solid #222; font-weight:600;"># vip-lounge</div>
-            <div class="messages-container" id="chatFeed"></div>
-            <div class="input-zone">
-                <div class="input-box">
-                    <input type="text" id="messageInput" placeholder="Message global..." autocomplete="off">
-                    <button id="sendBtn" style="background:none; border:none; color:#00ffcc; cursor:pointer">▶</button>
+        <div class="list-container" id="chatsList">
+            <div class="list-item" onclick="openChat('global', '🌍 Global Lounge')">
+                <div class="avatar" style="background:#fff; color:#000;">🌍</div>
+                <div class="item-info">
+                    <div class="item-name">Global Lounge</div>
+                    <div class="item-sub">Tap to open squad chat</div>
                 </div>
             </div>
+            <div id="dynamicList"></div>
+        </div>
+    </div>
+
+    <div id="activeChatScreen" class="screen hidden-right">
+        <div class="chat-header">
+            <div class="back-btn" onclick="toggleScreen('activeChatScreen', false)">‹</div>
+            <div class="chat-title-info">
+                <div class="chat-room-name" id="chatTitle">Room</div>
+            </div>
+        </div>
+        <div class="messages-feed" id="chatFeed"></div>
+        
+        <div class="typing-indicator" id="typingBox">
+            <span id="typingName">Someone</span> is typing
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+
+        <div class="chat-input-zone">
+            <div class="chat-input-box">
+                <input type="text" id="messageInput" placeholder="Send a chat..." autocomplete="off">
+                <button class="send-btn" id="sendBtn">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsScreen" class="screen hidden-down">
+        <div class="settings-close" onclick="toggleScreen('settingsScreen', false)">×</div>
+        <h2 style="font-weight:800; font-size:30px; margin-bottom:30px;">Settings</h2>
+        
+        <label style="color:#666; font-size:12px; font-weight:700;">NAME GLOW COLOR</label>
+        <input type="color" id="userColorPicker" value="#ffffff" style="width:100%; height:60px; border:none; border-radius:12px; margin-bottom:30px; background:transparent; cursor:pointer;">
+
+        <label style="color:#666; font-size:12px; font-weight:700;">UPDATE USERNAME</label>
+        <input type="text" id="newNameInput" class="input-dark" placeholder="New Name...">
+        <button class="btn-main" onclick="requestNameChange()" style="margin-top:10px;">SAVE PROFILE</button>
+        
+        <div style="margin-top:auto; padding-top:40px; text-align:center; color:#444; font-size:12px;">
+            FLUX OS v6.2 • Berserk Edition
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPnStupHytou8te3O-Xxb6TvEK8VnLzg8",
@@ -118,107 +173,152 @@
 
         let currentRoom = 'global';
         let allMessagesData = [];
-        let userCounts = {};
+        let onlineUsers = {};
+        let myName = localStorage.getItem('flux_name') || '';
 
-        // --- PREFERENCES & LOCKS ---
-        const savedName = localStorage.getItem('flux_name');
-        const lastChange = localStorage.getItem('flux_name_date'); // Stores timestamp
-        const savedColor = localStorage.getItem('flux_color') || '#ffffff';
-        
-        document.getElementById('userColorPicker').value = savedColor;
-        if (savedName) document.getElementById('displayName').value = savedName;
+        // FIX: Scroll to bottom immediately when keyboard opens
+        const msgInput = document.getElementById('messageInput');
+        msgInput.addEventListener('focus', () => {
+            setTimeout(() => {
+                document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+            }, 300);
+        });
 
-        // Toggle Settings Sidebar
-        window.toggleSettings = () => document.getElementById('settingsPanel').classList.toggle('settings-open');
-
-        // Handle Name Change Request
-        window.requestNameChange = () => {
-            const newName = document.getElementById('newNameInput').value.trim();
-            const now = Date.now();
-            const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-
-            if (!newName) return alert("Enter a name!");
-
-            if (lastChange && (now - lastChange < thirtyDays)) {
-                const daysLeft = Math.ceil((thirtyDays - (now - lastChange)) / (1000 * 60 * 60 * 24));
-                document.getElementById('timerLabel').innerText = `Wait ${daysLeft} more days to change name.`;
-            } else {
-                localStorage.setItem('flux_name', newName);
-                localStorage.setItem('flux_name_date', now);
-                alert("Name updated! Refresh to apply.");
-                location.reload();
+        // --- UI NAVIGATION ---
+        window.toggleScreen = (id, show) => {
+            const screen = document.getElementById(id);
+            if (id === 'activeChatScreen') {
+                show ? screen.classList.remove('hidden-right') : screen.classList.add('hidden-right');
+                if(show) setTimeout(() => document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight, 100);
+            } else if (id === 'settingsScreen') {
+                show ? screen.classList.remove('hidden-down') : screen.classList.add('hidden-down');
             }
         };
 
-        // Color Change
-        document.getElementById('userColorPicker').addEventListener('input', (e) => {
-            localStorage.setItem('flux_color', e.target.value);
-        });
+        // --- LOGIN & PRESENCE ---
+        if (myName) {
+            document.getElementById('displayName').value = myName;
+            document.getElementById('displayName').disabled = true;
+        }
 
-        // Login
-        document.getElementById('loginBtn').addEventListener('click', () => {
+        document.getElementById('loginBtn').addEventListener('click', async () => {
             const name = document.getElementById('displayName').value.trim();
             const code = document.getElementById('roomCode').value.trim();
-            if(name !== '' && code.toUpperCase() === 'FLUX2026') {
-                if(!localStorage.getItem('flux_name')) {
-                    localStorage.setItem('flux_name', name);
-                    localStorage.setItem('flux_name_date', Date.now());
-                }
-                sessionStorage.setItem('username', name);
-                if(name.toLowerCase() === 'rushikesh') document.getElementById('mainBody').classList.add('admin-mode');
-                document.getElementById('watermark').innerText = (name + " ").repeat(200);
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('chatScreen').style.display = 'flex';
-                setTimeout(() => document.getElementById('chatScreen').style.opacity = '1', 50);
+            if(name && code.toUpperCase() === 'FLUX2026') {
+                if(!localStorage.getItem('flux_name')) localStorage.setItem('flux_name', name);
+                myName = name;
+                
+                await setDoc(doc(db, "users", myName), { online: true, timestamp: serverTimestamp() });
+
+                document.getElementById('loginScreen').classList.add('hidden-fade');
+                document.getElementById('mainScreen').classList.remove('hidden-fade');
             }
         });
 
-        // --- ADMIN DELETE ---
-        window.deleteMessage = async (id) => {
-            if (sessionStorage.getItem('username').toLowerCase() === 'rushikesh') {
-                if (confirm("Delete forever?")) await deleteDoc(doc(db, "messages", id));
-            }
-        };
+        window.addEventListener('beforeunload', () => {
+            if(myName) setDoc(doc(db, "users", myName), { online: false });
+        });
 
-        // --- CHAT LOGIC ---
-        window.switchRoom = (target) => {
-            const me = sessionStorage.getItem('username');
-            if (target === me) return;
-            currentRoom = (target === 'global') ? 'global' : `private_${[me, target].sort().join('_')}`;
-            document.getElementById('roomHeader').innerText = target === 'global' ? "# vip-lounge" : "🔒 Chat with " + target;
+        // --- OPEN A CHAT ---
+        window.openChat = (roomId, displayTitle) => {
+            currentRoom = roomId;
+            document.getElementById('chatTitle').innerText = displayTitle;
+            toggleScreen('activeChatScreen', true);
             renderChat();
         };
 
+        // --- CREATE GROUPS ---
+        window.createNewGroup = async () => {
+            const groupName = prompt("Enter new Group Name:");
+            if(groupName && groupName.trim() !== '') {
+                const groupId = 'group_' + Date.now();
+                await setDoc(doc(db, "groups", groupId), { name: groupName.trim(), creator: myName });
+                openChat(groupId, '👥 ' + groupName);
+            }
+        };
+
+        // --- SENDING MESSAGES & TYPING ---
+        let typingTimeout;
+        msgInput.addEventListener('input', () => {
+            setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: true });
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: false });
+            }, 1500);
+        });
+
         async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const text = input.value.trim();
+            const text = msgInput.value.trim();
             if (!text) return;
-            const user = sessionStorage.getItem('username');
             const color = localStorage.getItem('flux_color') || '#ffffff';
-            let isAnnounce = (text.startsWith('ANNOUNCE:') && user.toLowerCase() === 'rushikesh');
-            let cleanText = isAnnounce ? text.replace('ANNOUNCE:', '').trim() : text;
-            input.value = '';
-            await addDoc(collection(db, "messages"), { text: cleanText, sender: user, color: color, announce: isAnnounce, room: currentRoom, timestamp: serverTimestamp() });
+            msgInput.value = '';
+            setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: false });
+            await addDoc(collection(db, "messages"), { text: text, sender: myName, color: color, room: currentRoom, timestamp: serverTimestamp() });
         }
 
         document.getElementById('sendBtn').addEventListener('click', sendMessage);
-        document.getElementById('messageInput').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+        msgInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
 
-        onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), snapshot => {
-            allMessagesData = []; userCounts = {};
-            snapshot.forEach(d => {
-                let data = d.data(); data.id = d.id;
-                allMessagesData.push(data);
-                if (data.room === 'global' || !data.room) userCounts[data.sender] = (userCounts[data.sender] || 0) + 1;
-            });
-            updateSidebar(); renderChat();
+        // --- LIVE DATABASE LISTENERS ---
+        onSnapshot(collection(db, "users"), snapshot => {
+            onlineUsers = {};
+            snapshot.forEach(doc => { onlineUsers[doc.id] = doc.data().online; });
+            updateListUI();
         });
 
-        function updateSidebar() {
-            const div = document.getElementById('activeMembers'); div.innerHTML = '';
-            const me = sessionStorage.getItem('username');
-            Object.keys(userCounts).forEach(u => {
-                if (u !== me) div.innerHTML += `<div class="member" onclick="switchRoom('${u}')"><div class="status-dot"></div>${u}</div>`;
+        let activeGroups = [];
+        onSnapshot(collection(db, "groups"), snapshot => {
+            activeGroups = [];
+            snapshot.forEach(doc => { activeGroups.push({ id: doc.id, name: doc.data().name }); });
+            updateListUI();
+        });
+
+        onSnapshot(collection(db, "typing"), snapshot => {
+            const typingBox = document.getElementById('typingBox');
+            let isSomeoneTyping = false;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if(doc.id === currentRoom && data.isTyping && data.user !== myName) {
+                    document.getElementById('typingName').innerText = data.user;
+                    isSomeoneTyping = true;
+                }
+            });
+            typingBox.style.display = isSomeoneTyping ? 'flex' : 'none';
+            if(isSomeoneTyping) document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+        });
+
+        onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), snapshot => {
+            allMessagesData = [];
+            snapshot.forEach(d => { allMessagesData.push(d.data()); });
+            renderChat();
+        });
+
+        // --- RENDER FUNCTIONS ---
+        function updateListUI() {
+            const listDiv = document.getElementById('dynamicList');
+            listDiv.innerHTML = '';
+            activeGroups.forEach(g => {
+                listDiv.innerHTML += `
+                    <div class="list-item" onclick="openChat('${g.id}', '👥 ${g.name}')">
+                        <div class="avatar" style="background:#222;">👥</div>
+                        <div class="item-info"><div class="item-name">${g.name}</div></div>
+                    </div>`;
+            });
+
+            Object.keys(onlineUsers).forEach(u => {
+                if (u !== myName) {
+                    const statusDot = onlineUsers[u] ? '<div class="online-dot"></div>' : '';
+                    const roomId = `private_${[myName, u].sort().join('_')}`;
+                    const initial = u.charAt(0).toUpperCase();
+                    listDiv.innerHTML += `
+                        <div class="list-item" onclick="openChat('${roomId}', '🔒 ${u}')">
+                            <div class="avatar">${initial}${statusDot}</div>
+                            <div class="item-info">
+                                <div class="item-name">${u}</div>
+                                <div class="item-sub">${onlineUsers[u] ? 'Online right now' : 'Offline'}</div>
+                            </div>
+                        </div>`;
+                }
             });
         }
 
@@ -226,29 +326,39 @@
             const feed = document.getElementById('chatFeed'); feed.innerHTML = '';
             allMessagesData.forEach(d => {
                 if ((d.room || 'global') === currentRoom) {
-                    if (d.announce) {
-                        feed.innerHTML += `<div class="announcement" ondblclick="deleteMessage('${d.id}')">📢 ${d.text}</div>`;
-                    } else {
-                        let b = 'badge-newbie', t = 'SQUAD', n = d.sender.toLowerCase();
-                        if (n === 'rushikesh') { b = 'badge-admin'; t = '👑 ADMIN'; }
-                        else if (n === 'shreyash') { b = 'badge-dev'; t = '💻 DEV'; }
-                        else if (n === 'roshan') { b = 'badge-emp'; t = '🌋 EMP'; }
-                        else if (userCounts[d.sender] >= 50) { b = 'badge-elite'; t = '⭐ ELITE'; }
+                    const isMe = d.sender === myName;
+                    const wrapperClass = isMe ? 'message-wrapper msg-self' : 'message-wrapper';
+                    
+                    let b = '', t = '', c = d.color || '#fff';
+                    let n = d.sender.toLowerCase();
+                    if (n === 'rushikesh') { b = 'border:1px solid #00ffcc; color:#00ffcc;'; t = '👑 ADMIN'; c = '#00ffcc'; }
+                    else if (n === 'shreyash') { b = 'border:1px solid #0088ff; color:#0088ff;'; t = '💻 DEV'; }
+                    else if (n === 'roshan') { b = 'border:1px solid #ff0044; color:#ff0044;'; t = '🌋 EMP'; }
 
-                        feed.innerHTML += `
-                            <div class="message" ondblclick="deleteMessage('${d.id}')">
-                                <div class="sender" style="color:${d.color || '#fff'}"><span class="badge ${b}">${t}</span>${d.sender}</div>
-                                <div class="text">${d.text}</div>
-                            </div>`;
-                    }
+                    const badgeHtml = t ? `<span class="badge" style="${b}">${t}</span>` : '';
+
+                    feed.innerHTML += `
+                        <div class="${wrapperClass}">
+                            <div class="msg-sender" style="color:${c}">${badgeHtml} ${d.sender}</div>
+                            <div class="msg-bubble">${d.text}</div>
+                        </div>`;
                 }
             });
             feed.scrollTop = feed.scrollHeight;
         }
 
-        document.addEventListener('contextmenu', e => e.preventDefault());
-        window.addEventListener('blur', () => document.body.style.filter = 'blur(15px)');
-        window.addEventListener('focus', () => document.body.style.filter = 'none');
+        // --- SETTINGS ---
+        document.getElementById('userColorPicker').value = localStorage.getItem('flux_color') || '#ffffff';
+        document.getElementById('userColorPicker').addEventListener('input', e => localStorage.setItem('flux_color', e.target.value));
+        
+        window.requestNameChange = () => {
+            const newName = document.getElementById('newNameInput').value.trim();
+            if (newName) {
+                localStorage.setItem('flux_name', newName);
+                alert("Name updated. Refreshing app.");
+                location.reload();
+            }
+        };
     </script>
 </body>
 </html>
