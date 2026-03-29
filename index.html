@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Flux - Berserk Edition</title>
     <style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Flux - Berserk Edition</title>
+    <style>
         /* PURE BLACK SNAPCHAT STYLE THEME */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
@@ -99,4 +106,299 @@
         <div class="top-nav">
             <div class="nav-title">
                 Chats
-                <svg width="24" height="24" viewBox="0 0 100 120" style="fill:#ff003c;"><path d="M50 0 L45 20 L
+                <svg width="24" height="24" viewBox="0 0 100 120" style="fill:#ff003c;"><path d="M50 0 L45 20 L35 15 L45 35 L30 30 L45 50 L20 40 L40 65 L10 60 L45 80 L35 110 L50 90 L65 110 L55 80 L90 60 L60 65 L80 40 L55 50 L70 30 L55 35 L65 15 L55 20 Z"/><line x1="50" y1="0" x2="50" y2="120" stroke="#ff003c" stroke-width="4"/></svg>
+            </div>
+            <div class="action-btns">
+                <button class="icon-btn" onclick="createNewGroup()">➕</button>
+                <button class="icon-btn" onclick="toggleScreen('settingsScreen', true)">⚙️</button>
+            </div>
+        </div>
+        <div class="list-container" id="chatsList">
+            <div class="list-item" onclick="openChat('global', '🌍 Global Lounge')">
+                <div class="avatar" style="background:#fff; color:#000;">🌍</div>
+                <div class="item-info">
+                    <div class="item-name">Global Lounge</div>
+                    <div class="item-sub">Tap to open squad chat</div>
+                </div>
+            </div>
+            <div id="dynamicList"></div>
+        </div>
+    </div>
+
+    <div id="activeChatScreen" class="screen hidden-right">
+        <div class="chat-header">
+            <div class="back-btn" onclick="toggleScreen('activeChatScreen', false)">‹</div>
+            <div class="chat-title-info">
+                <div class="chat-room-name" id="chatTitle">Room</div>
+            </div>
+        </div>
+        <div class="messages-feed" id="chatFeed"></div>
+        
+        <div class="typing-indicator" id="typingBox">
+            <span id="typingName">Someone</span> is typing
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+
+        <div class="chat-input-zone">
+            <div class="chat-input-box">
+                <input type="text" id="messageInput" placeholder="Send a chat..." autocomplete="off">
+                <button class="send-btn" id="sendBtn">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsScreen" class="screen hidden-down">
+        <div class="settings-close" onclick="toggleScreen('settingsScreen', false)">×</div>
+        <h2 style="font-weight:800; font-size:30px; margin-bottom:30px;">Settings</h2>
+        
+        <label style="color:#666; font-size:12px; font-weight:700;">NAME GLOW COLOR</label>
+        <input type="color" id="userColorPicker" value="#ffffff" style="width:100%; height:60px; border:none; border-radius:12px; margin-bottom:30px; background:transparent; cursor:pointer;">
+
+        <label style="color:#666; font-size:12px; font-weight:700;">UPDATE USERNAME</label>
+        <input type="text" id="newNameInput" class="input-dark" placeholder="New Name...">
+        <button class="btn-main" onclick="requestNameChange()" style="margin-top:10px;">SAVE PROFILE</button>
+        
+        <div style="margin-top:auto; padding-top:40px; text-align:center; color:#444; font-size:12px;">
+            FLUX OS v7.0 • Bulletproof Edition
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // FIREBASE CONNECTION
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPnStupHytou8te3O-Xxb6TvEK8VnLzg8",
+            authDomain: "fluxchat-9b101.firebaseapp.com",
+            projectId: "fluxchat-9b101",
+            storageBucket: "fluxchat-9b101.firebasestorage.app",
+            messagingSenderId: "1009980465023",
+            appId: "1:1009980465023:web:bbdfa372d709c9c2ccc44a"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // CORE VARIABLES
+        let currentRoom = 'global';
+        let allMessagesData = [];
+        let onlineUsers = {}; 
+        let myName = localStorage.getItem('flux_name') || '';
+
+        // --- THE BULLETPROOF PRESENCE SYSTEM ---
+        function setOnlineStatus(status) {
+            if (myName) {
+                try {
+                    setDoc(doc(db, "users", myName), { isOnline: status }, { merge: true });
+                } catch(e) { console.error("Presence Error", e); }
+            }
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            setOnlineStatus(document.visibilityState === 'visible');
+        });
+        window.addEventListener("pagehide", () => setOnlineStatus(false));
+        window.addEventListener("beforeunload", () => setOnlineStatus(false));
+        setInterval(() => { if (document.visibilityState === 'visible') setOnlineStatus(true); }, 15000);
+
+        // --- MOBILE KEYBOARD & UI LOGIC ---
+        const msgInput = document.getElementById('messageInput');
+        msgInput.addEventListener('focus', () => {
+            setTimeout(() => { document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight; }, 300);
+        });
+
+        window.toggleScreen = (id, show) => {
+            const screen = document.getElementById(id);
+            if (id === 'activeChatScreen') {
+                show ? screen.classList.remove('hidden-right') : screen.classList.add('hidden-right');
+                if(show) setTimeout(() => document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight, 100);
+            } else if (id === 'settingsScreen') {
+                show ? screen.classList.remove('hidden-down') : screen.classList.add('hidden-down');
+            }
+        };
+
+        // --- THE LOGIN ENGINE ---
+        if (myName) {
+            document.getElementById('displayName').value = myName;
+            document.getElementById('displayName').disabled = true;
+        }
+
+        async function attemptLogin() {
+            try {
+                const name = document.getElementById('displayName').value.trim();
+                const code = document.getElementById('roomCode').value.trim();
+                
+                if (!name) return alert("⚠️ Please enter your Username!");
+                if (code.toUpperCase() !== 'FLUX2026') return alert("⛔ Wrong Secret Code!");
+
+                document.getElementById('loginBtn').innerText = "CONNECTING...";
+
+                // Save name and establish presence
+                if(!localStorage.getItem('flux_name')) localStorage.setItem('flux_name', name);
+                myName = name;
+                setOnlineStatus(true); 
+
+                // Hide login screen
+                document.getElementById('loginScreen').classList.add('hidden-fade');
+                document.getElementById('mainScreen').classList.remove('hidden-fade');
+                document.getElementById('loginBtn').innerText = "ENTER SQUAD";
+            } catch (error) {
+                alert("CRASH DETECTED: " + error.message);
+                document.getElementById('loginBtn').innerText = "ENTER SQUAD";
+            }
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', attemptLogin);
+        document.getElementById('roomCode').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') attemptLogin();
+        });
+
+
+        // --- LIVE DATABASE SYNC ---
+        onSnapshot(collection(db, "users"), snapshot => {
+            onlineUsers = {};
+            snapshot.forEach(doc => { onlineUsers[doc.id] = doc.data().isOnline; }); 
+            updateListUI();
+        });
+
+        let activeGroups = [];
+        onSnapshot(collection(db, "groups"), snapshot => {
+            activeGroups = [];
+            snapshot.forEach(doc => { activeGroups.push({ id: doc.id, name: doc.data().name }); });
+            updateListUI();
+        });
+
+        onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), snapshot => {
+            allMessagesData = [];
+            snapshot.forEach(d => { allMessagesData.push(d.data()); });
+            renderChat();
+        });
+
+        onSnapshot(collection(db, "typing"), snapshot => {
+            const typingBox = document.getElementById('typingBox');
+            let isSomeoneTyping = false;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if(doc.id === currentRoom && data.isTyping && data.user !== myName) {
+                    document.getElementById('typingName').innerText = data.user;
+                    isSomeoneTyping = true;
+                }
+            });
+            typingBox.style.display = isSomeoneTyping ? 'flex' : 'none';
+            if(isSomeoneTyping) document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+        });
+
+
+        // --- UI RENDERERS ---
+        function updateListUI() {
+            const listDiv = document.getElementById('dynamicList');
+            let newHTML = '';
+            
+            activeGroups.forEach(g => {
+                newHTML += `
+                    <div class="list-item" onclick="openChat('${g.id}', '👥 ${g.name}')">
+                        <div class="avatar" style="background:#222;">👥</div>
+                        <div class="item-info"><div class="item-name">${g.name}</div></div>
+                    </div>`;
+            });
+
+            Object.keys(onlineUsers).forEach(u => {
+                if (u !== myName) {
+                    const isOnline = onlineUsers[u] === true;
+                    const statusClass = isOnline ? 'active' : '';
+                    const statusText = isOnline ? 'Online right now' : 'Offline';
+                    const roomId = `private_${[myName, u].sort().join('_')}`;
+                    const initial = u.charAt(0).toUpperCase();
+                    
+                    newHTML += `
+                        <div class="list-item" onclick="openChat('${roomId}', '🔒 ${u}')">
+                            <div class="avatar">${initial}<div class="online-dot ${statusClass}"></div></div>
+                            <div class="item-info">
+                                <div class="item-name">${u}</div>
+                                <div class="item-sub">${statusText}</div>
+                            </div>
+                        </div>`;
+                }
+            });
+
+            listDiv.innerHTML = newHTML;
+        }
+
+        function renderChat() {
+            const feed = document.getElementById('chatFeed'); feed.innerHTML = '';
+            allMessagesData.forEach(d => {
+                if ((d.room || 'global') === currentRoom) {
+                    const isMe = d.sender === myName;
+                    const wrapperClass = isMe ? 'message-wrapper msg-self' : 'message-wrapper';
+                    
+                    let b = '', t = '', c = d.color || '#fff';
+                    let n = d.sender.toLowerCase();
+                    if (n === 'rushikesh') { b = 'border:1px solid #00ffcc; color:#00ffcc;'; t = '👑 ADMIN'; c = '#00ffcc'; }
+                    else if (n === 'shreyash') { b = 'border:1px solid #0088ff; color:#0088ff;'; t = '💻 DEV'; }
+                    else if (n === 'roshan') { b = 'border:1px solid #ff0044; color:#ff0044;'; t = '🌋 EMP'; }
+
+                    const badgeHtml = t ? `<span class="badge" style="${b}">${t}</span>` : '';
+
+                    feed.innerHTML += `
+                        <div class="${wrapperClass}">
+                            <div class="msg-sender" style="color:${c}">${badgeHtml} ${d.sender}</div>
+                            <div class="msg-bubble">${d.text}</div>
+                        </div>`;
+                }
+            });
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        // --- MESSAGE & GROUP SENDING ---
+        window.openChat = (roomId, displayTitle) => {
+            currentRoom = roomId;
+            document.getElementById('chatTitle').innerText = displayTitle;
+            toggleScreen('activeChatScreen', true);
+            renderChat();
+        };
+
+        window.createNewGroup = async () => {
+            const groupName = prompt("Enter new Group Name:");
+            if(groupName && groupName.trim() !== '') {
+                const groupId = 'group_' + Date.now();
+                await setDoc(doc(db, "groups", groupId), { name: groupName.trim(), creator: myName });
+                openChat(groupId, '👥 ' + groupName);
+            }
+        };
+
+        let typingTimeout;
+        msgInput.addEventListener('input', () => {
+            setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: true });
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: false });
+            }, 1500);
+        });
+
+        async function sendMessage() {
+            const text = msgInput.value.trim();
+            if (!text) return;
+            const color = localStorage.getItem('flux_color') || '#ffffff';
+            msgInput.value = '';
+            setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: false });
+            await addDoc(collection(db, "messages"), { text: text, sender: myName, color: color, room: currentRoom, timestamp: serverTimestamp() });
+        }
+
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        msgInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+
+        // --- SETTINGS ---
+        document.getElementById('userColorPicker').value = localStorage.getItem('flux_color') || '#ffffff';
+        document.getElementById('userColorPicker').addEventListener('input', e => localStorage.setItem('flux_color', e.target.value));
+        
+        window.requestNameChange = () => {
+            const newName = document.getElementById('newNameInput').value.trim();
+            if (newName) {
+                localStorage.setItem('flux_name', newName);
+                alert("Name updated. Refreshing app.");
+                location.reload();
+            }
+        };
+    </script>
+</body>
+</html>
