@@ -463,7 +463,13 @@
             await addDoc(collection(db, "messages"), { text, sender: myName, color, room: currentRoom, replyTo: replyingToData, timestamp: serverTimestamp() });            // PUSH NOTIFICATION TRIGGER
             fetch("https://onesignal.com/api/v1/notifications", {
                 method: "POST",
-                headers: { "Content-Type": "application/json; charset=utf-8" },
+                         headers: { 
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": "Basic
+                os_v2_app_zhu4bf3dzbhh5chv5ghp6papl7ts5tdwq5revdu2dahp2pcsgvvfsofnttlubkgfad5mytj45nni6wzvhu7tpg6cmaiyw4gwv2gs5pi" 
+        },
+                
+                
                 body: JSON.stringify({
                     app_id: "c9e9c097-63c8-4e7e-88f5-e98eff3c0f5f",
                     included_segments: ["All"],
