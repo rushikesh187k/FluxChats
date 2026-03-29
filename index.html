@@ -15,7 +15,6 @@
 
     <title>Flux - Berserk Edition</title>
     <style>
-        /* PURE BLACK SNAPCHAT STYLE THEME */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; height: -webkit-fill-available; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #000000; color: #ffffff; height: 100dvh; overflow: hidden; user-select: none; overscroll-behavior-y: none; touch-action: none; }
@@ -52,7 +51,6 @@
         .item-name { font-size: 17px; font-weight: 600; }
         .item-sub { font-size: 13px; color: #666; margin-top: 4px; }
 
-        .chat-area { flex-grow: 1; display: flex; flex-direction: column; background: #000; min-height: 0; }
         .chat-header { display: flex; align-items: center; padding: env(safe-area-inset-top, 20px) 20px 20px 20px; border-bottom: 1px solid #111; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); }
         .back-btn { font-size: 24px; margin-right: 15px; cursor: pointer; color: #fff; }
         .chat-title-info { display: flex; flex-direction: column; }
@@ -91,12 +89,10 @@
         .chat-input-box input[type="text"] { flex-grow: 1; background: transparent; border: none; color: #fff; font-size: 16px; outline: none; margin-left: 5px; }
         .send-btn { background: #fff; color: #000; border: none; border-radius: 50%; min-width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; font-size: 16px; cursor: pointer; }
         .media-btn { background: transparent; border: none; color: #888; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 5px; transition: 0.2s; }
-        .media-btn:active { transform: scale(0.9); }
 
         #settingsScreen { background: #0a0a0c; padding: env(safe-area-inset-top, 30px) 30px 30px 30px; }
         .settings-close { text-align: right; font-size: 40px; cursor: pointer; color: #666; margin-bottom: 20px; line-height: 1; }
 
-        /* NEW: FULL SCREEN IMAGE VIEWER */
         #imageViewer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.95); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.3s; backdrop-filter: blur(5px); }
         #imageViewer img { max-width: 95%; max-height: 80dvh; object-fit: contain; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
         .close-viewer { position: absolute; top: env(safe-area-inset-top, 30px); right: 20px; color: #fff; font-size: 40px; cursor: pointer; font-weight: 300; }
@@ -128,10 +124,7 @@
 
     <div id="mainScreen" class="screen hidden-fade">
         <div class="top-nav">
-            <div class="nav-title">
-                Chats
-                <svg width="24" height="24" viewBox="0 0 100 120" style="fill:#ff003c;"><path d="M50 0 L45 20 L35 15 L45 35 L30 30 L45 50 L20 40 L40 65 L10 60 L45 80 L35 110 L50 90 L65 110 L55 80 L90 60 L60 65 L80 40 L55 50 L70 30 L55 35 L65 15 L55 20 Z"/><line x1="50" y1="0" x2="50" y2="120" stroke="#ff003c" stroke-width="4"/></svg>
-            </div>
+            <div class="nav-title">Chats</div>
             <div class="action-btns">
                 <button class="icon-btn" onclick="createNewGroup()">➕</button>
                 <button class="icon-btn" onclick="toggleScreen('settingsScreen', true)">⚙️</button>
@@ -172,7 +165,6 @@
             <div class="chat-input-box">
                 <button class="media-btn" id="viewOnceToggle" title="View Once Mode">⏱️</button>
                 <button class="media-btn" id="photoBtn">📷</button>
-                
                 <input type="file" id="mediaUpload" style="display: none;" accept="image/*">
                 <input type="text" id="messageInput" placeholder="Send a chat..." autocomplete="off">
                 <button class="send-btn" id="sendBtn">➤</button>
@@ -192,45 +184,147 @@
         <button class="btn-main" onclick="requestNameChange()" style="margin-top:10px;">SAVE PROFILE</button>
         
         <div style="margin-top:auto; padding-top:40px; text-align:center; color:#444; font-size:12px;">
-            FLUX OS v11.0 • Snapchat Edition
+            FLUX OS v12.0 • APK Safe Edition
         </div>
     </div>
 
     <script type="module">
-                            async function attemptLogin() {
-            try {
-                const name = document.getElementById('displayName').value.trim();
-                const code = document.getElementById('roomCode').value.trim();
-                if (!name) return alert("⚠️ Please enter your Username!");
-                if (code.toUpperCase() !== 'FLUX2026') return alert("⛔ Wrong Secret Code!");
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, setDoc, doc, updateDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-                document.getElementById('loginBtn').innerText = "CONNECTING...";
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPnStupHytou8te3O-Xxb6TvEK8VnLzg8",
+            authDomain: "fluxchat-9b101.firebaseapp.com",
+            projectId: "fluxchat-9b101",
+            storageBucket: "fluxchat-9b101.firebasestorage.app",
+            messagingSenderId: "1009980465023",
+            appId: "1:1009980465023:web:bbdfa372d709c9c2ccc44a"
+        };
 
-                if(!localStorage.getItem('flux_name')) localStorage.setItem('flux_name', name);
-                myName = name;
-                
-                // Attempt to turn on the green dot
-                try { setOnlineStatus(true); } catch(e) { console.log(e); }
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-                // 1. SWITCH SCREENS IMMEDIATELY (Don't let anything block this)
-                document.getElementById('loginScreen').classList.add('hidden-fade');
-                document.getElementById('mainScreen').classList.remove('hidden-fade');
-                document.getElementById('loginBtn').innerText = "ENTER SQUAD";
-
-                // 2. ASK FOR NOTIFICATIONS 2 SECONDS LATER (Wrapped in a crash-catcher)
-                setTimeout(() => {
-                    try {
-                        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-                            Notification.requestPermission();
-                        }
-                    } catch (err) {
-                        console.log("APK Blocked Notification Request");
-                    }
-                }, 2000);
-
-            } catch (error) {
-                alert("CRASH DETECTED: " + error.message);
-                document.getElementById('loginBtn').innerText = "ENTER SQUAD";
-            }
-                            }
+        let currentRoom = 'global';
+        let allMessagesData = [];
+        let onlineUsers = {}; 
+        let roomReadReceipts = {}; 
+        let replyingToData = null; 
+        let isInitialLoad = true; 
+        let isViewOnceMode = false;
         
+        // SAFE LOCAL STORAGE CHECK
+        let myName = '';
+        let myColor = '#ffffff';
+        try {
+            myName = localStorage.getItem('flux_name') || '';
+            myColor = localStorage.getItem('flux_color') || '#ffffff';
+        } catch (e) { console.warn("LocalStorage blocked by APK"); }
+        
+        const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+        // --- FULL SCREEN VIEWER LOGIC ---
+        window.openImage = (url) => {
+            const viewer = document.getElementById('imageViewer');
+            document.getElementById('viewerImg').src = url;
+            viewer.style.display = 'flex';
+            setTimeout(() => viewer.style.opacity = '1', 10);
+            document.getElementById('messageInput').blur(); 
+        };
+
+        window.closeViewer = () => {
+            const viewer = document.getElementById('imageViewer');
+            viewer.style.opacity = '0';
+            setTimeout(() => {
+                viewer.style.display = 'none';
+                document.getElementById('viewerImg').src = '';
+            }, 300);
+        };
+
+        window.openViewOnce = async (msgId, url) => {
+            openImage(url); 
+            try { await updateDoc(doc(db, "messages", msgId), { opened: true }); } 
+            catch (e) { console.error(e); }
+        };
+
+        document.getElementById('viewOnceToggle').addEventListener('click', (e) => {
+            isViewOnceMode = !isViewOnceMode;
+            if (isViewOnceMode) {
+                e.target.style.color = '#00ffcc';
+                e.target.style.textShadow = '0 0 10px rgba(0,255,204,0.5)';
+            } else {
+                e.target.style.color = '#888';
+                e.target.style.textShadow = 'none';
+            }
+        });
+
+        // SAFE NOTIFICATION ENGINE
+        function triggerNotification(msgData) {
+            alertSound.play().catch(e => {});
+            try {
+                if (typeof Notification !== 'undefined' && Notification.permission === "granted" && document.visibilityState !== "visible") {
+                    let msgBody = msgData.text ? msgData.text : (msgData.viewOnce ? "💣 Sent a View Once photo" : "📸 Sent a photo");
+                    new Notification(`Flux: ${msgData.sender}`, {
+                        body: msgBody,
+                        icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Berserk_brand_of_sacrifice.svg/512px-Berserk_brand_of_sacrifice.svg.png"
+                    });
+                }
+            } catch (err) {}
+        }
+
+        window.deleteMessage = async (id) => {
+            if (myName.toLowerCase() === 'rushikesh') {
+                if (confirm("Delete this message forever?")) await deleteDoc(doc(db, "messages", id));
+            }
+        };
+
+        window.setReply = (sender, text) => {
+            replyingToData = { sender: sender, text: text };
+            document.getElementById('replyBannerText').innerHTML = `<b>Replying to ${sender}:</b> ${text.substring(0, 40)}...`;
+            document.getElementById('replyBanner').style.display = 'block';
+            document.getElementById('messageInput').focus();
+        };
+
+        window.cancelReply = () => {
+            replyingToData = null;
+            document.getElementById('replyBanner').style.display = 'none';
+        };
+
+        function markRoomAsRead() {
+            if (myName && currentRoom && !document.getElementById('activeChatScreen').classList.contains('hidden-right')) {
+                try { setDoc(doc(db, "reads", currentRoom), { [myName]: Date.now() }, { merge: true }); } catch(e){}
+            }
+        }
+
+        onSnapshot(collection(db, "reads"), snapshot => {
+            snapshot.forEach(docSnap => {
+                if (docSnap.id === currentRoom) {
+                    roomReadReceipts = docSnap.data();
+                    renderChat(); 
+                }
+            });
+        });
+
+        function setOnlineStatus(status) {
+            if (myName) {
+                try { setDoc(doc(db, "users", myName), { isOnline: status }, { merge: true }); } catch(e) {}
+            }
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            setOnlineStatus(document.visibilityState === 'visible');
+            if (document.visibilityState === 'visible') markRoomAsRead(); 
+        });
+        window.addEventListener("pagehide", () => setOnlineStatus(false));
+        window.addEventListener("beforeunload", () => setOnlineStatus(false));
+        setInterval(() => { if (document.visibilityState === 'visible') setOnlineStatus(true); }, 15000);
+
+        const msgInput = document.getElementById('messageInput');
+        msgInput.addEventListener('focus', () => {
+            setTimeout(() => { document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight; }, 300);
+            markRoomAsRead(); 
+        });
+
+        window.toggleScreen = (id, show) => {
+            const screen = document.getElementById(id);
+            if (id === 'activeChatScreen') {
+                show ? scree
