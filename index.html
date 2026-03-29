@@ -460,7 +460,19 @@
             if (!text) return;
             const color = localStorage.getItem('flux_color') || '#ffffff';
             msgInput.value = '';
-            await addDoc(collection(db, "messages"), { text, sender: myName, color, room: currentRoom, replyTo: replyingToData, timestamp: serverTimestamp() });
+            await addDoc(collection(db, "messages"), { text, sender: myName, color, room: currentRoom, replyTo: replyingToData, timestamp: serverTimestamp() });            // PUSH NOTIFICATION TRIGGER
+            fetch("https://onesignal.com/api/v1/notifications", {
+                method: "POST",
+                headers: { "Content-Type": "application/json; charset=utf-8" },
+                body: JSON.stringify({
+                    app_id: "c9e9c097-63c8-4e7e-88f5-e98eff3c0f5f",
+                    included_segments: ["All"],
+                    headings: { "en": "Flux: " + myName },
+                    contents: { "en": text || "📸 Sent a photo" },
+                    url: window.location.href
+                })
+            }).catch(e => console.log("Push failed"));
+            
             cancelReply(); 
         }
 
