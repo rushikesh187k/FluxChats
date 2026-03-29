@@ -224,7 +224,23 @@
         };
 
         window.cancelReply = () => {
-            replyingToData = null;
+            replyingToData = null;        window.openImage = (url) => {
+            const viewer = document.getElementById('imageViewer');
+            document.getElementById('viewerImg').src = url;
+            viewer.style.display = 'flex';
+            setTimeout(() => viewer.style.opacity = '1', 10);
+            document.getElementById('messageInput').blur(); 
+        };
+
+        window.closeViewer = () => {
+            const viewer = document.getElementById('imageViewer');
+            viewer.style.opacity = '0';
+            setTimeout(() => {
+                viewer.style.display = 'none';
+                document.getElementById('viewerImg').src = '';
+            }, 300);
+        };
+            
             document.getElementById('replyBanner').style.display = 'none';
         };
 
