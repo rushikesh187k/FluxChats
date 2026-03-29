@@ -279,12 +279,107 @@
             snapshot.forEach(doc => {
                 const data = doc.data();
                 if(doc.id === currentRoom && data.isTyping && data.user !== myName) {
-                    document.getElementById('typingName').innerText = data.user;
-                    isSomeoneTyping = true;
-                }
-            });
-            typingBox.style.display = isSomeoneTyping ? 'flex' : 'none';
-            if(isSomeoneTyping) document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPnStupHytou8te3O-Xxb6TvEK8VnLzg8",
+            authDomain: "fluxchat-9b101.firebaseapp.com",
+            projectId: "fluxchat-9b101",
+            storageBucket: "fluxchat-9b101.firebasestorage.app",
+            messagingSenderId: "1009980465023",
+            appId: "1:1009980465023:web:bbdfa372d709c9c2ccc44a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let currentRoom = 'global';
+        let allMessagesData = [];
+        let onlineUsers = {}; // Back to pure True/False
+        let myName = localStorage.getItem('flux_name') || '';
+
+        const msgInput = document.getElementById('messageInput');
+        msgInput.addEventListener('focus', () => {
+            setTimeout(() => { document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight; }, 300);
+        });
+
+        window.toggleScreen = (id, show) => {
+            const screen = document.getElementById(id);
+            if (id === 'activeChatScreen') {
+                show ? screen.classList.remove('hidden-right') : screen.classList.add('hidden-right');
+                if(show) setTimeout(() => document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight, 100);
+            } else if (id === 'settingsScreen') {
+                show ? screen.classList.remove('hidden-down') : screen.classList.add('hidden-down');
+            }
+        };
+
+        // --- BULLETPROOF PRESENCE SYSTEM ---
+        function setOnlineStatus(status) {
+            if (myName) {
+                setDoc(doc(db, "users", myName), { isOnline: status }, { merge: true });
+            }
+        }
+
+        // 1. Phone screen locks or user switches apps
+        document.addEventListener("visibilitychange", () => {
+            setOnlineStatus(document.visibilityState === 'visible');
+        });
+
+        // 2. Browser tab is closed or swiped away
+        window.addEventListener("pagehide", () => setOnlineStatus(false));
+        window.addEventListener("beforeunload", () => setOnlineStatus(false));
+
+        // 3. Failsafe: Keep it alive if they are staring at the screen for a long time
+        setInterval(() => {
+            if (document.visibilityState === 'visible') setOnlineStatus(true);
+        }, 15000);
+
+
+        // --- THE LOGIN LOGIC ---
+        if (myName) {
+            document.getElementById('displayName').value = myName;
+            document.getElementById('displayName').disabled = true;
+        }
+
+        async function attemptLogin() {
+            const name = document.getElementById('displayName').value.trim();
+            const code = document.getElementById('roomCode').value.trim();
+            
+            if (!name) return alert("⚠️ Please enter your Username!");
+            if (code.toUpperCase() !== 'FLUX2026') return alert("⛔ Wrong Secret Code!");
+
+            document.getElementById('loginBtn').innerText = "CONNECTING...";
+
+            if(!localStorage.getItem('flux_name')) localStorage.setItem('flux_name', name);
+            myName = name;
+            
+            setOnlineStatus(true); // Turn green dot ON
+
+            document.getElementById('loginScreen').classList.add('hidden-fade');
+            document.getElementById('mainScreen').classList.remove('hidden-fade');
+            document.getElementById('loginBtn').innerText = "ENTER";
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', attemptLogin);
+        document.getElementById('roomCode').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') attemptLogin();
+        });
+
+
+        // --- LIVE DATABASE LISTENERS ---
+        onSnapshot(collection(db, "users"), snapshot => {
+            onlineUsers = {};
+            snapshot.forEach(doc => { onlineUsers[doc.id] = doc.data().isOnline; }); // Just reads True or False
+            updateListUI();
+        });
+
+        let activeGroups = [];
+        onSnapshot(collection(db, "groups"), snapshot => {
+            activeGroups = [];
+            snapshot.forEach(doc => { activeGroups.push({ id: doc.id, name: doc.data().name }); });
+            updateListUI();
         });
 
         onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), snapshot => {
@@ -293,12 +388,27 @@
             renderChat();
         });
 
+        onSnapshot(collection(db, "typing"), snapshot => {
+            const typingBox = document.getElementById('typingBox');
+            let isSomeoneTyping = false;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if(doc.id === currentRoom && data.isTyping && data.user !== myName) {
+                    document.getElementById('typingName').innerText = data.user;
+                    isSomeoneTyping = true;
+                }
+            });
+            typingBox.style.display = isSomeoneTyping ? 'flex' : 'none';
+            if(isSomeoneTyping) document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+        });
+
         // --- RENDER FUNCTIONS ---
         function updateListUI() {
             const listDiv = document.getElementById('dynamicList');
-            listDiv.innerHTML = '';
+            let newHTML = '';
+            
             activeGroups.forEach(g => {
-                listDiv.innerHTML += `
+                newHTML += `
                     <div class="list-item" onclick="openChat('${g.id}', '👥 ${g.name}')">
                         <div class="avatar" style="background:#222;">👥</div>
                         <div class="item-info"><div class="item-name">${g.name}</div></div>
@@ -307,19 +417,25 @@
 
             Object.keys(onlineUsers).forEach(u => {
                 if (u !== myName) {
-                    const statusDot = onlineUsers[u] ? '<div class="online-dot"></div>' : '';
+                    const isOnline = onlineUsers[u] === true;
+                    const statusClass = isOnline ? 'active' : '';
+                    const statusText = isOnline ? 'Online right now' : 'Offline';
+                    
                     const roomId = `private_${[myName, u].sort().join('_')}`;
                     const initial = u.charAt(0).toUpperCase();
-                    listDiv.innerHTML += `
+                    
+                    newHTML += `
                         <div class="list-item" onclick="openChat('${roomId}', '🔒 ${u}')">
-                            <div class="avatar">${initial}${statusDot}</div>
+                            <div class="avatar">${initial}<div class="online-dot ${statusClass}"></div></div>
                             <div class="item-info">
                                 <div class="item-name">${u}</div>
-                                <div class="item-sub">${onlineUsers[u] ? 'Online right now' : 'Offline'}</div>
+                                <div class="item-sub">${statusText}</div>
                             </div>
                         </div>`;
                 }
             });
+
+            listDiv.innerHTML = newHTML;
         }
 
         function renderChat() {
@@ -346,6 +462,44 @@
             });
             feed.scrollTop = feed.scrollHeight;
         }
+
+        // --- OPEN A CHAT & SENDING MESSAGES ---
+        window.openChat = (roomId, displayTitle) => {
+            currentRoom = roomId;
+            document.getElementById('chatTitle').innerText = displayTitle;
+            toggleScreen('activeChatScreen', true);
+            renderChat();
+        };
+
+        window.createNewGroup = async () => {
+            const groupName = prompt("Enter new Group Name:");
+            if(groupName && groupName.trim() !== '') {
+                const groupId = 'group_' + Date.now();
+                await setDoc(doc(db, "groups", groupId), { name: groupName.trim(), creator: myName });
+                openChat(groupId, '👥 ' + groupName);
+            }
+        };
+
+        let typingTimeout;
+        msgInput.addEventListener('input', () => {
+            setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: true });
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: false });
+            }, 1500);
+        });
+
+        async function sendMessage() {
+            const text = msgInput.value.trim();
+            if (!text) return;
+            const color = localStorage.getItem('flux_color') || '#ffffff';
+            msgInput.value = '';
+            setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: false });
+            await addDoc(collection(db, "messages"), { text: text, sender: myName, color: color, room: currentRoom, timestamp: serverTimestamp() });
+        }
+
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        msgInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
 
         // --- SETTINGS ---
         document.getElementById('userColorPicker').value = localStorage.getItem('flux_color') || '#ffffff';
