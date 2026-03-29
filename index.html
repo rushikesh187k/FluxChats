@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "c9e9c097-63c8-4e7e-88f5-e98eff3c0f5f",
-      allowLocalhostAsSecureOrigin: true,
-    });
-  });
-</script>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
@@ -24,7 +13,24 @@
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Berserk_brand_of_sacrifice.svg/512px-Berserk_brand_of_sacrifice.svg.png">
     <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Berserk_brand_of_sacrifice.svg/512px-Berserk_brand_of_sacrifice.svg.png">
 
+    <meta name="description" content="Flux Chat - The ultimate private squad messaging network.">
+    <meta name="keywords" content="Flux chat, private messenger, squad chat app, real-time messaging">
+    <meta name="author" content="Rushikesh">
+    <meta name="robots" content="index, follow">
+
     <title>Flux - Berserk Edition</title>
+
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "c9e9c097-63c8-4e7e-88f5-e98eff3c0f5f",
+          allowLocalhostAsSecureOrigin: true,
+        });
+      });
+    </script>
+
     <style>
         /* PURE BLACK SNAPCHAT STYLE THEME */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -196,7 +202,7 @@
         <button class="btn-main" onclick="requestNameChange()" style="margin-top:10px;">SAVE PROFILE</button>
         
         <div style="margin-top:auto; padding-top:40px; text-align:center; color:#444; font-size:12px;">
-            FLUX OS v9.5 • Photo Zoom Edition
+            FLUX OS v10.0 • Ultimate Edition
         </div>
     </div>
 
@@ -204,6 +210,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyBPnStupHytou8te3O-Xxb6TvEK8VnLzg8",
             authDomain: "fluxchat-9b101.firebaseapp.com",
@@ -216,12 +223,28 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // GLOBAL VARIABLES
         let currentRoom = 'global';
         let allMessagesData = [];
         let onlineUsers = {}; 
         let roomReadReceipts = {}; 
-        let myName = localStorage.getItem('flux_name') || '';
         let replyingToData = null; 
+        let typingTimeout;
+
+        // AUTO-LOGIN LOGIC
+        let myName = localStorage.getItem('flux_name') || '';
+        let isLoggedIn = localStorage.getItem('flux_auth') === 'true';
+
+        if (myName && isLoggedIn) {
+            // Bypass login completely if remembered
+            document.getElementById('loginScreen').classList.add('hidden-fade');
+            document.getElementById('mainScreen').classList.remove('hidden-fade');
+            setOnlineStatus(true);
+        } else if (myName) {
+            // Fill name but wait for code
+            document.getElementById('displayName').value = myName;
+            document.getElementById('displayName').disabled = true;
+        }
 
         // ZOOM LOGIC
         window.openImage = (url) => {
@@ -241,12 +264,14 @@
             }, 300);
         };
 
+        // MESSAGE DELETION (RUSHIKESH ONLY)
         window.deleteMessage = async (id) => {
             if (myName.toLowerCase() === 'rushikesh') {
                 if (confirm("Delete this message forever?")) await deleteDoc(doc(db, "messages", id));
             }
         };
 
+        // REPLY LOGIC
         window.setReply = (sender, text) => {
             replyingToData = { sender: sender, text: text };
             document.getElementById('replyBannerText').innerHTML = `<b>Replying to ${sender}:</b> ${text.substring(0, 40)}...`;
@@ -259,6 +284,7 @@
             document.getElementById('replyBanner').style.display = 'none';
         };
 
+        // PRESENCE & READ RECEIPTS
         function markRoomAsRead() {
             if (myName && currentRoom && !document.getElementById('activeChatScreen').classList.contains('hidden-right')) {
                 setDoc(doc(db, "reads", currentRoom), { [myName]: Date.now() }, { merge: true });
@@ -275,7 +301,7 @@
         });
 
         function setOnlineStatus(status) {
-            if (myName) {
+            if (myName && isLoggedIn) {
                 try { setDoc(doc(db, "users", myName), { isOnline: status }, { merge: true }); } catch(e) {}
             }
         }
@@ -307,21 +333,21 @@
             }
         };
 
-        if (myName) {
-            document.getElementById('displayName').value = myName;
-            document.getElementById('displayName').disabled = true;
-        }
-
+        // LOGIN SYSTEM
         async function attemptLogin() {
             try {
                 const name = document.getElementById('displayName').value.trim();
-                const code = document.getElementById('roomCode').value.trim();
+                                const code = document.getElementById('roomCode').value.trim();
                 if (!name) return alert("⚠️ Please enter your Username!");
                 if (code.toUpperCase() !== 'FLUX2026') return alert("⛔ Wrong Secret Code!");
 
                 document.getElementById('loginBtn').innerText = "CONNECTING...";
-                if(!localStorage.getItem('flux_name')) localStorage.setItem('flux_name', name);
+                
+                // Set LocalStorage for Auto-Login
+                localStorage.setItem('flux_name', name);
+                localStorage.setItem('flux_auth', 'true');
                 myName = name;
+                isLoggedIn = true;
                 setOnlineStatus(true); 
 
                 document.getElementById('loginScreen').classList.add('hidden-fade');
@@ -336,11 +362,12 @@
         document.getElementById('loginBtn').addEventListener('click', attemptLogin);
         document.getElementById('roomCode').addEventListener('keypress', (e) => { if (e.key === 'Enter') attemptLogin(); });
 
+        // FIREBASE DATA FETCHING
         onSnapshot(collection(db, "users"), snapshot => {
             onlineUsers = {};
             snapshot.forEach(doc => { onlineUsers[doc.id] = doc.data().isOnline; }); 
             updateListUI();
-                    });
+        });
 
         let activeGroups = [];
         onSnapshot(collection(db, "groups"), snapshot => {
@@ -374,7 +401,8 @@
             if(isSomeoneTyping) document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
         });
 
-                function updateListUI() {
+        // UI RENDERING
+        function updateListUI() {
             const listDiv = document.getElementById('dynamicList');
             let newHTML = '';
             
@@ -418,20 +446,25 @@
                 let b = '', t = '', c = d.color || '#fff';
                 let n = d.sender.toLowerCase();
                 if (n === 'rushikesh') { b = 'border:1px solid #00ffcc; color:#00ffcc;'; t = '👑 ADMIN'; c = '#00ffcc'; }
+                else if (n === 'shreyash') { b = 'border:1px solid #0088ff; color:#0088ff;'; t = '💻 DEV'; }
+                else if (n === 'roshan') { b = 'border:1px solid #ff0044; color:#ff0044;'; t = '🌋 EMP'; }
 
                 const badgeHtml = t ? `<span class="badge" style="${b}">${t}</span>` : '';
                 let quotedHtml = d.replyTo ? `<div class="reply-quote"><b>${d.replyTo.sender}</b>: ${d.replyTo.text}</div>` : '';
 
                 let mediaHtml = '';
+                let rawText = d.text ? d.text.replace(/'/g, "\\'") : ''; 
                 if (d.type === 'image') {
+                    // ZOOM FEATURE ACTIVE
                     mediaHtml = `<img src="${d.url}" onclick="openImage('${d.url}')" style="width:100%; border-radius:12px; margin-top:5px; border:1px solid #333; cursor:pointer;">`;
+                    rawText = '📸 Photo'; 
                 }
 
                 let contentHtml = d.text 
                     ? `<div class="msg-bubble">${quotedHtml}${d.text}${mediaHtml}</div>` 
                     : `<div class="msg-bubble" style="padding:4px; background:transparent;">${quotedHtml}${mediaHtml}</div>`;
 
-                let replyBtnHtml = `<button class="msg-reply-btn" onclick="setReply('${d.sender}', '${d.text || '📸 Photo'}')">↩️</button>`;
+                let replyBtnHtml = `<button class="msg-reply-btn" onclick="setReply('${d.sender}', '${rawText}')">↩️</button>`;
 
                 let senderRow = isMe 
                     ? `${replyBtnHtml} <div class="msg-sender" style="color:${c}">${badgeHtml} ${d.sender}</div>`
@@ -445,6 +478,24 @@
                         ${contentHtml}
                     </div>`;
             });
+
+            if (roomMessages.length > 0) {
+                const lastMsgTime = roomMessages[roomMessages.length - 1].timestamp;
+                let seenByArray = [];
+
+                if (lastMsgTime) {
+                    Object.keys(roomReadReceipts).forEach(user => {
+                        if (user !== myName && roomReadReceipts[user] > lastMsgTime.toMillis()) {
+                            seenByArray.push(user);
+                        }
+                    });
+
+                    if (seenByArray.length > 0) {
+                        feed.innerHTML += `<div class="seen-receipt">👁️ Seen by ${seenByArray.join(', ')}</div>`;
+                    }
+                }
+            }
+
             feed.scrollTop = feed.scrollHeight;
         }
 
@@ -455,21 +506,45 @@
             toggleScreen('activeChatScreen', true);
         };
 
+        window.createNewGroup = async () => {
+            const groupName = prompt("Enter new Group Name:");
+            if(groupName && groupName.trim() !== '') {
+                const groupId = 'group_' + Date.now();
+                await setDoc(doc(db, "groups", groupId), { name: groupName.trim(), creator: myName });
+                openChat(groupId, '👥 ' + groupName);
+            }
+        };
+
+        // TYPING & SENDING LOGIC
+        msgInput.addEventListener('input', () => {
+            setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: true });
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => { setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: false }); }, 1500);
+        });
+
         async function sendMessage() {
             const text = msgInput.value.trim();
             if (!text) return;
             const color = localStorage.getItem('flux_color') || '#ffffff';
             msgInput.value = '';
-            await addDoc(collection(db, "messages"), { text, sender: myName, color, room: currentRoom, replyTo: replyingToData, timestamp: serverTimestamp() });            // PUSH NOTIFICATION TRIGGER
+            setDoc(doc(db, "typing", currentRoom), { user: myName, isTyping: false });
+            
+            await addDoc(collection(db, "messages"), { 
+                text: text, 
+                sender: myName, 
+                color: color, 
+                room: currentRoom, 
+                replyTo: replyingToData, 
+                timestamp: serverTimestamp() 
+            });
+            
+            // ONESIGNAL PUSH NOTIFICATION TRIGGER (WITH FIX)
             fetch("https://onesignal.com/api/v1/notifications", {
                 method: "POST",
-                         headers: { 
-            "Content-Type": "application/json; charset=utf-8",
-            "Authorization": "Basic
-                os_v2_app_zhu4bf3dzbhh5chv5ghp6papl7ts5tdwq5revdu2dahp2pcsgvvfsofnttlubkgfad5mytj45nni6wzvhu7tpg6cmaiyw4gwv2gs5pi" 
-        },
-                
-                
+                headers: { 
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Authorization": "Basic os_v2_app_zhu4bf3dzbhh5chv5ghp6papl7ts5tdwq5revo" 
+                },
                 body: JSON.stringify({
                     app_id: "c9e9c097-63c8-4e7e-88f5-e98eff3c0f5f",
                     included_segments: ["All"],
@@ -478,31 +553,76 @@
                     url: window.location.href
                 })
             }).catch(e => console.log("Push failed"));
-            
+
             cancelReply(); 
+            markRoomAsRead();
         }
 
         document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        msgInput.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+
+        // IMAGE UPLOADS
         const photoBtn = document.getElementById('photoBtn');
         const mediaInput = document.getElementById('mediaUpload');
         photoBtn.addEventListener('click', () => mediaInput.click());
+
         mediaInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            photoBtn.innerText = '⏳';
-            const formData = new FormData(); formData.append('image', file);
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=490add9cb8d5f0adc742061acc80914c`, { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.success) {
-                await addDoc(collection(db, "messages"), { text: "", sender: myName, room: currentRoom, type: 'image', url: data.data.url, timestamp: serverTimestamp() });
-            }
-            photoBtn.innerText = '📷';
+
+            photoBtn.innerText = '⏳'; 
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                const apiKey = '490add9cb8d5f0adc742061acc80914c'; 
+                
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if (data.success) {
+                    const url = data.data.url;
+                    const color = localStorage.getItem('flux_color') || '#ffffff';
+
+                    await addDoc(collection(db, "messages"), {
+                        text: "", sender: myName, color: color, room: currentRoom, type: 'image', url: url, 
+                        replyTo: replyingToData, 
+                        timestamp: serverTimestamp()
+                    });
+
+                    // PUSH NOTIFICATION FOR IMAGE
+                    fetch("https://onesignal.com/api/v1/notifications", {
+                        method: "POST",
+                        headers: { 
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Authorization": "Basic os_v2_app_zhu4bf3dzbhh5chv5ghp6papl7ts5tdwq5revo" 
+                        },
+                        body: JSON.stringify({
+                            app_id: "c9e9c097-63c8-4e7e-88f5-e98eff3c0f5f",
+                            included_segments: ["All"],
+                            headings: { "en": "Flux: " + myName },
+                            contents: { "en": "📸 Sent a photo" },
+                            url: window.location.href
+                        })
+                    }).catch(e => console.log("Push failed"));
+
+                    cancelReply();
+                    markRoomAsRead();
+                } else { alert("Bypass failed."); }
+            } catch (error) { alert("Upload error: " + error.message); }
+            
+            photoBtn.innerText = '📷'; 
+            mediaInput.value = '';
         });
 
+        // SETTINGS & PROFILE
+        document.getElementById('userColorPicker').value = localStorage.getItem('flux_color') || '#ffffff';
+        document.getElementById('userColorPicker').addEventListener('input', e => localStorage.setItem('flux_color', e.target.value));
+        
         window.requestNameChange = () => {
             const newName = document.getElementById('newNameInput').value.trim();
             if (newName) {
                 localStorage.setItem('flux_name', newName);
+                alert("Name updated. Refreshing app.");
                 location.reload();
             }
         };
@@ -510,4 +630,4 @@
 </body>
 </html>
 
- 
+          
