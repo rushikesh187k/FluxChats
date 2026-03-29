@@ -197,128 +197,40 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, setDoc, doc, updateDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBPnStupHytou8te3O-Xxb6TvEK8VnLzg8",
-            authDomain: "fluxchat-9b101.firebaseapp.com",
-            projectId: "fluxchat-9b101",
-            storageBucket: "fluxchat-9b101.firebasestorage.app",
-            messagingSenderId: "1009980465023",
-            appId: "1:1009980465023:web:bbdfa372d709c9c2ccc44a"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        let currentRoom = 'global';
-        let allMessagesData = [];
-        let onlineUsers = {}; 
-        let roomReadReceipts = {}; 
-        let myName = localStorage.getItem('flux_name') || '';
-        let replyingToData = null; 
-        let isInitialLoad = true; 
-        
-        // NEW: VIEW ONCE STATE
-        let isViewOnceMode = false;
-        
-        const alertSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-
-        // --- FULL SCREEN VIEWER LOGIC ---
-        window.openImage = (url) => {
-            const viewer = document.getElementById('imageViewer');
-            document.getElementById('viewerImg').src = url;
-            viewer.style.display = 'flex';
-            setTimeout(() => viewer.style.opacity = '1', 10);
-            msgInput.blur(); // Hide keyboard if open
-        };
-
-        window.closeViewer = () => {
-            const viewer = document.getElementById('imageViewer');
-            viewer.style.opacity = '0';
-            setTimeout(() => {
-                viewer.style.display = 'none';
-                document.getElementById('viewerImg').src = '';
-            }, 300);
-        };
-
-        // --- VIEW ONCE OPEN LOGIC ---
-        window.openViewOnce = async (msgId, url) => {
-            openImage(url); // Show the image full screen
+                            async function attemptLogin() {
             try {
-                // Permanently mark it as opened in the database
-                await updateDoc(doc(db, "messages", msgId), { opened: true });
-            } catch (e) { console.error("Could not mark as opened", e); }
-        };
+                const name = document.getElementById('displayName').value.trim();
+                const code = document.getElementById('roomCode').value.trim();
+                if (!name) return alert("⚠️ Please enter your Username!");
+                if (code.toUpperCase() !== 'FLUX2026') return alert("⛔ Wrong Secret Code!");
 
-        // --- TOGGLE VIEW ONCE MODE ---
-        document.getElementById('viewOnceToggle').addEventListener('click', (e) => {
-            isViewOnceMode = !isViewOnceMode;
-            if (isViewOnceMode) {
-                e.target.style.color = '#00ffcc';
-                e.target.style.textShadow = '0 0 10px rgba(0,255,204,0.5)';
-            } else {
-                e.target.style.color = '#888';
-                e.target.style.textShadow = 'none';
+                document.getElementById('loginBtn').innerText = "CONNECTING...";
+
+                if(!localStorage.getItem('flux_name')) localStorage.setItem('flux_name', name);
+                myName = name;
+                
+                // Attempt to turn on the green dot
+                try { setOnlineStatus(true); } catch(e) { console.log(e); }
+
+                // 1. SWITCH SCREENS IMMEDIATELY (Don't let anything block this)
+                document.getElementById('loginScreen').classList.add('hidden-fade');
+                document.getElementById('mainScreen').classList.remove('hidden-fade');
+                document.getElementById('loginBtn').innerText = "ENTER SQUAD";
+
+                // 2. ASK FOR NOTIFICATIONS 2 SECONDS LATER (Wrapped in a crash-catcher)
+                setTimeout(() => {
+                    try {
+                        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                            Notification.requestPermission();
+                        }
+                    } catch (err) {
+                        console.log("APK Blocked Notification Request");
+                    }
+                }, 2000);
+
+            } catch (error) {
+                alert("CRASH DETECTED: " + error.message);
+                document.getElementById('loginBtn').innerText = "ENTER SQUAD";
             }
-        });
-
-        // --- NOTIFICATION ENGINE ---
-        function triggerNotification(msgData) {
-            alertSound.play().catch(e => {});
-            if ("Notification" in window && Notification.permission === "granted" && document.visibilityState !== "visible") {
-                let msgBody = msgData.text ? msgData.text : (msgData.viewOnce ? "💣 Sent a View Once photo" : "📸 Sent a photo");
-                new Notification(`Flux: ${msgData.sender}`, {
-                    body: msgBody,
-                    icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Berserk_brand_of_sacrifice.svg/512px-Berserk_brand_of_sacrifice.svg.png"
-                });
-            }
-        }
-
-        window.deleteMessage = async (id) => {
-            if (myName.toLowerCase() === 'rushikesh') {
-                if (confirm("Delete this message forever?")) await deleteDoc(doc(db, "messages", id));
-            }
-        };
-
-        window.setReply = (sender, text) => {
-            replyingToData = { sender: sender, text: text };
-            document.getElementById('replyBannerText').innerHTML = `<b>Replying to ${sender}:</b> ${text.substring(0, 40)}...`;
-            document.getElementById('replyBanner').style.display = 'block';
-            document.getElementById('messageInput').focus();
-        };
-
-        window.cancelReply = () => {
-            replyingToData = null;
-            document.getElementById('replyBanner').style.display = 'none';
-        };
-
-        function markRoomAsRead() {
-            if (myName && currentRoom && !document.getElementById('activeChatScreen').classList.contains('hidden-right')) {
-                setDoc(doc(db, "reads", currentRoom), { [myName]: Date.now() }, { merge: true });
-            }
-        }
-
-        onSnapshot(collection(db, "reads"), snapshot => {
-            snapshot.forEach(docSnap => {
-                if (docSnap.id === currentRoom) {
-                    roomReadReceipts = docSnap.data();
-                    renderChat(); 
-                }
-            });
-        });
-
-        function setOnlineStatus(status) {
-            if (myName) {
-                try { setDoc(doc(db, "users", myName), { isOnline: status }, { merge: true }); } catch(e) {}
-            }
-        }
-
-        document.addEventListener("visibilitychange", () => {
-            setOnlineStatus(document.visibilityState === 'visible');
-            if (document.visibilityState === 'visible') markRoomAsRead(); 
-        });
-        window.addEventListener("pagehide", () => setOnlineStatus(false));
-        window.addEventListener("beforeunload", () => setOnlineStatus(false));
-        setInterval(() => { if (document.visibilitySt
+                            }
+        
